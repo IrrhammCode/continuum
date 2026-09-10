@@ -112,6 +112,14 @@ export function DirectorStudio() {
     }
   };
 
+  const appendDirective = (directive: string) => {
+    setPrompt((prev) => {
+      const clean = prev.trim();
+      if (clean.includes(directive)) return clean;
+      return `${clean} [${directive}]`;
+    });
+  };
+
   // ── Fetch project-scoped scenes when activeProject changes ──
   useEffect(() => {
     if (!activeProject?.id) return;
@@ -423,166 +431,267 @@ export function DirectorStudio() {
         </div>
       </div>
 
-      {/* ── Cast & Setting Selector ── */}
-      <div className="context-strip" style={{ flexWrap: "wrap", gap: "16px" }}>
+      {/* ── Cast, Location & Props Palette ── */}
+      <div className="context-strip" style={{ flexWrap: "wrap", gap: "18px", alignItems: "flex-start" }}>
         {/* Cast Selection */}
         <div className="context-block">
-          <label>
-            CAST <span>({selectedCharIds.length} SELECTED)</span>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+            CAST <span style={{ background: "#7657d8", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>{selectedCharIds.length} SELECTED</span>
           </label>
-          <div className="chips">
-            {vaultChars.map((c) => (
-              <button
-                key={c.id}
-                type="button"
-                className={`person-chip ${selectedCharIds.includes(c.id) ? "selected" : ""}`}
-                onClick={() => toggleChar(c.id)}
-                title={`Click to toggle ${c.name}`}
-                style={{
-                  borderColor: selectedCharIds.includes(c.id) ? "#7657d8" : "#d8d5dd",
-                  background: selectedCharIds.includes(c.id) ? "#f4effc" : "#fbfaf8",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 10px 4px 6px",
-                }}
-              >
-                {c.avatarUrl ? (
-                  <img
-                    src={c.avatarUrl}
-                    alt={c.name}
-                    style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "4px",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
-                    }}
-                  />
-                ) : (
-                  <i className={`portrait ${c.name.includes("Yuki") ? "yuki" : "ren"}`}></i>
-                )}
-                <span>{c.name}</span>
-                {selectedCharIds.includes(c.id) && <Icon name="check" size={13} />}
-              </button>
-            ))}
+          <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {vaultChars.map((c) => {
+              const isSelected = selectedCharIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  className={`person-chip ${isSelected ? "selected" : ""}`}
+                  onClick={() => toggleChar(c.id)}
+                  title={`Click to toggle ${c.name}`}
+                  style={{
+                    borderColor: isSelected ? "#7657d8" : "#e2e0e7",
+                    background: isSelected ? "#f5f0ff" : "#ffffff",
+                    boxShadow: isSelected ? "0 0 0 1.5px #7657d8, 0 3px 8px rgba(118,87,216,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "6px 14px 6px 6px",
+                    borderRadius: "12px",
+                    transition: "all 0.15s ease",
+                    cursor: "pointer",
+                  }}
+                >
+                  {c.avatarUrl ? (
+                    <img
+                      src={c.avatarUrl}
+                      alt={c.name}
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
+                        border: isSelected ? "2px solid #7657d8" : "1px solid rgba(0,0,0,0.08)",
+                      }}
+                    />
+                  ) : (
+                    <div style={{ width: "42px", height: "42px", borderRadius: "8px", background: "linear-gradient(135deg, #7657d8, #a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "14px" }}>
+                      {c.name.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+                  <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{c.name}</span>
+                    <span style={{ fontSize: "10.5px", color: isSelected ? "#7657d8" : "#7c7a88", fontWeight: 500 }}>
+                      {c.epithet ? c.epithet.slice(0, 24) : "Canon Character"}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#7657d8", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="check" size={11} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Setting Selection */}
         <div className="context-block setting">
-          <label>
-            LOCATION <span>DKG ANCHORED</span>
+          <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+            LOCATION <span style={{ background: "#0d9488", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>DKG ANCHORED</span>
           </label>
-          <div className="chips">
-            {vaultSets.map((s) => (
-              <button
-                key={s.id}
-                type="button"
-                className={`place-chip ${selectedSetId === s.id ? "selected" : ""}`}
-                onClick={() => setSelectedSetId(s.id)}
-                style={{
-                  borderColor: selectedSetId === s.id ? "#1b9e91" : "#d8d5dd",
-                  background: selectedSetId === s.id ? "#e8f8f5" : "#fbfaf8",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  padding: "4px 10px 4px 6px",
-                }}
-              >
-                {s.imageUrl ? (
+          <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+            {vaultSets.map((s) => {
+              const isSelected = selectedSetId === s.id;
+              const displayImg = s.imageUrl || (s.name.includes("Garden") ? "/assets/vault/sky-garden.jpg" : s.name.includes("Derelict") ? "/assets/vault/derelict-alpha.jpg" : "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDEvc3ZZOHV1Tk10VUxSXzB4WHFNQUJRLmpwZw.26042ef301363d28/svY8uuNMtULR_0xXqMABQ.jpg");
+              return (
+                <button
+                  key={s.id}
+                  type="button"
+                  className={`place-chip ${isSelected ? "selected" : ""}`}
+                  onClick={() => setSelectedSetId(s.id)}
+                  style={{
+                    borderColor: isSelected ? "#0d9488" : "#e2e0e7",
+                    background: isSelected ? "#f0fdfa" : "#ffffff",
+                    boxShadow: isSelected ? "0 0 0 1.5px #0d9488, 0 3px 8px rgba(13,148,136,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    padding: "6px 14px 6px 6px",
+                    borderRadius: "12px",
+                    transition: "all 0.15s ease",
+                    cursor: "pointer",
+                  }}
+                >
                   <img
-                    src={s.imageUrl}
+                    src={displayImg}
                     alt={s.name}
                     style={{
-                      width: "22px",
-                      height: "22px",
-                      borderRadius: "4px",
+                      width: "62px",
+                      height: "42px",
+                      borderRadius: "8px",
                       objectFit: "cover",
                       flexShrink: 0,
-                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                      boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
+                      border: isSelected ? "2px solid #0d9488" : "1px solid rgba(0,0,0,0.08)",
                     }}
                   />
-                ) : (
-                  <i></i>
-                )}
-                <span>{s.name}</span>
-                {selectedSetId === s.id && <Icon name="check" size={13} />}
-              </button>
-            ))}
+                  <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{s.name}</span>
+                    <span style={{ fontSize: "10.5px", color: isSelected ? "#0d9488" : "#7c7a88", fontWeight: 500 }}>
+                      {s.timeOfDay || "Atmospheric Set"}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#0d9488", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                      <Icon name="check" size={11} />
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Props & Gear Selection */}
         {vaultProps.length > 0 && (
-          <div className="context-block props-block">
-            <label>
-              PROPS & GEAR <span>({selectedPropIds.length} SELECTED)</span>
+          <div className="context-block props-block" style={{ width: "100%" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+              PROPS & GEAR <span style={{ background: "#d97706", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>{selectedPropIds.length} SELECTED</span>
             </label>
-            <div className="chips">
-              {vaultProps.map((p) => (
-                <button
-                  key={p.id}
-                  type="button"
-                  className={`person-chip prop-chip ${selectedPropIds.includes(p.id) ? "selected" : ""}`}
-                  onClick={() => toggleProp(p.id)}
-                  title={p.description}
-                  style={{
-                    borderColor: selectedPropIds.includes(p.id) ? "#d97706" : "#d8d5dd",
-                    background: selectedPropIds.includes(p.id) ? "#fffbeb" : "#fbfaf8",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "6px",
-                    padding: "4px 10px 4px 6px",
-                  }}
-                >
-                  {p.imageUrl ? (
+            <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
+              {vaultProps.map((p) => {
+                const isSelected = selectedPropIds.includes(p.id);
+                const displayImg = p.imageUrl || (p.name.includes("Katana") ? "/assets/continuity/ren-anchor-2.jpg" : p.name.includes("Cartridge") ? "/assets/vault/sky-garden.jpg" : "/assets/vault/derelict-alpha.jpg");
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    className={`person-chip prop-chip ${isSelected ? "selected" : ""}`}
+                    onClick={() => toggleProp(p.id)}
+                    title={p.description}
+                    style={{
+                      borderColor: isSelected ? "#d97706" : "#e2e0e7",
+                      background: isSelected ? "#fffbeb" : "#ffffff",
+                      boxShadow: isSelected ? "0 0 0 1.5px #d97706, 0 3px 8px rgba(217,119,6,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: "10px",
+                      padding: "6px 14px 6px 6px",
+                      borderRadius: "12px",
+                      transition: "all 0.15s ease",
+                      cursor: "pointer",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
                     <img
-                      src={p.imageUrl}
+                      src={displayImg}
                       alt={p.name}
-                      style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }}
+                      style={{
+                        width: "42px",
+                        height: "42px",
+                        borderRadius: "8px",
+                        objectFit: "cover",
+                        flexShrink: 0,
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
+                        border: isSelected ? "2px solid #d97706" : "1px solid rgba(0,0,0,0.08)",
+                      }}
                     />
-                  ) : (
-                    <Icon name="spark" size={12} />
-                  )}
-                  <span>{p.name}</span>
-                  {selectedPropIds.includes(p.id) && <Icon name="check" size={13} />}
-                </button>
-              ))}
+                    <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
+                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{p.name}</span>
+                      <span style={{ fontSize: "10.5px", color: isSelected ? "#d97706" : "#7c7a88", fontWeight: 500 }}>
+                        {p.type || (p.category === "lore" ? "Canon Lore" : "Physical Prop")}
+                      </span>
+                    </div>
+                    {isSelected && (
+                      <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#d97706", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
+                        <Icon name="check" size={11} />
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
             </div>
           </div>
         )}
 
         {/* Bound Sound Leitmotif */}
-        <div className="motif" style={{ marginLeft: "auto" }}>
-          <Icon name="wave" size={19} />
+        <div className="motif" style={{ marginLeft: "auto", background: "#fbfaf8", border: "1px solid #e2e0e7", padding: "8px 16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
+          <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Icon name="wave" size={18} />
+          </div>
           <div>
-            <small>BOUND LEITMOTIF</small>
-            <strong>
-              {selectedMotif?.name ?? "None"} <span>· {selectedMotif?.key ?? ""}</span>
+            <small style={{ fontSize: "10px", color: "#8a8894", fontWeight: 700, display: "block" }}>BOUND LEITMOTIF</small>
+            <strong style={{ fontSize: "12.5px", color: "#181725" }}>
+              {selectedMotif?.name ?? "None"} <span style={{ color: "#7657d8", fontWeight: 600 }}>· {selectedMotif?.key ?? ""}</span>
             </strong>
           </div>
         </div>
       </div>
 
       {/* ── Director's Intention & Action Prompt ── */}
-      <section className="director-panel">
-        <div className="director-panel-top">
+      <section className="director-panel" style={{ marginTop: "18px", borderRadius: "14px", border: "1px solid #dfdce4", background: "#ffffff", padding: "18px 20px", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
+        <div className="director-panel-top" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
           <div>
-            <p className="eyebrow">DIRECTOR'S INTENTION</p>
-            <span style={{ fontSize: "12px", color: "#666" }}>
-              Write what happens. The DKG engine automatically locks faces, clothes, and lighting to eliminate visual drift.
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+              <p className="eyebrow" style={{ margin: 0, fontSize: "13px", fontWeight: 800, letterSpacing: "0.8px", color: "#181725" }}>DIRECTOR'S INTENTION & BLOCKING</p>
+              <span style={{ fontSize: "10px", fontWeight: 700, background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "12px" }}>
+                ✨ NEURO-SYMBOLIC PIPELINE
+              </span>
+            </div>
+            <span style={{ fontSize: "12px", color: "#6b687a" }}>
+              Direct camera trajectory, scene blocking, and dramatic character action. DKG Knowledge Assets continuously anchor facial geometry, lighting schemas, and leitmotifs to eliminate visual drift.
             </span>
           </div>
-          <button className="constraint" onClick={() => navigate("/vault")}>
-            <Icon name="lock" size={13} /> 14 DKG constraints active
+          <button className="constraint" onClick={() => navigate("/vault")} style={{ flexShrink: 0 }}>
+            <Icon name="lock" size={13} /> DKG Canon Guards Active
           </button>
         </div>
 
-        {/* Quick Presets */}
+        {/* Cinematic Framing & Mood Directives */}
+        <div style={{ background: "#f8f7fa", border: "1px solid #ebe8f0", borderRadius: "10px", padding: "10px 14px", marginBottom: "14px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.5px", minWidth: "90px" }}>
+              CAMERA SHOT:
+            </span>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("2.39:1 Anamorphic Wide Tracking Shot")}>
+              🎥 Anamorphic Wide
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Macro Close-Up on Ocular Implant with Retinal HUD")}>
+              🔍 Macro Retinal Focus
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Low-Angle Hero Stance with Wet Asphalt Reflections")}>
+              🎬 Low-Angle Hero
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Over-the-Shoulder Tracking Shot through Heavy Downpour")}>
+              🌧️ Over-the-Shoulder
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.5px", minWidth: "90px" }}>
+              ATMOSPHERE:
+            </span>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Volumetric Neon Fog and Glistening Acid Rain Streaks")}>
+              ⚡ Neon Fog & Rain
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Bioluminescent Moonlit Glow and Drifting Plant Mist")}>
+              🌌 Moonlit Flora
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Rhythmic Amber Emergency Strobes in Zero-G Void")}>
+              🚨 Amber Zero-G Strobes
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Cyan Holographic Glitch Distortions")}>
+              💻 Holographic Glitch
+            </button>
+          </div>
+        </div>
+
+        {/* Quick Story Presets */}
         <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "10px 0 12px", alignItems: "center" }}>
-          <span style={{ fontSize: "10px", fontWeight: 700, color: "#8a8894", letterSpacing: "0.5px" }}>
+          <span style={{ fontSize: "10px", fontWeight: 800, color: "#8a8894", letterSpacing: "0.5px" }}>
             STORY PRESETS:
           </span>
           <button type="button" className="preset-chip-btn" onClick={() => applyPreset("alley")}>
@@ -596,40 +705,37 @@ export function DirectorStudio() {
           </button>
         </div>
 
+        {/* Prompt Textarea */}
         <textarea
           rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your scene direction..."
+          placeholder="Describe your scene direction, blocking, camera movement, and character actions..."
           disabled={rendering}
+          style={{ width: "100%", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", lineHeight: "1.5", border: "1px solid #d4d0dc" }}
         />
 
-        <div className="prompt-tools">
-          <div style={{ display: "flex", gap: "8px" }}>
-            <button
-              type="button"
-              className="add-detail"
-              onClick={() =>
-                setPrompt(
-                  "Ren stops beneath the neon ramen sign, rain dripping from his trenchcoat. He draws his blade as purple thunder lights the wet street."
-                )
-              }
-            >
-              <Icon name="spark" size={14} /> Quick sample: Rain action
-            </button>
-            <button
-              type="button"
-              className="add-detail"
-              onClick={() =>
-                setPrompt(
-                  "Yuki hacks the surveillance terminal on the rooftop garden. Holographic data pulses in violet around her face as crescent moonlight shines down."
-                )
-              }
-            >
-              <Icon name="spark" size={14} /> Quick sample: Yuki hacking
-            </button>
+        {/* Live Active Canon Injection Strip */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", flexWrap: "wrap", gap: "8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10.5px", color: "#6b687a", fontWeight: 700 }}>DKG BINDINGS:</span>
+            {selectedCharNames.length > 0 && (
+              <span style={{ fontSize: "10.5px", background: "#f5f0ff", color: "#6d28d9", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                🎭 {selectedCharNames.join(", ")}
+              </span>
+            )}
+            {selectedSet && (
+              <span style={{ fontSize: "10.5px", background: "#f0fdfa", color: "#0f766e", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                📍 {selectedSet.name}
+              </span>
+            )}
+            {selectedPropIds.length > 0 && (
+              <span style={{ fontSize: "10.5px", background: "#fffbeb", color: "#b45309", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
+                🗡️ {vaultProps.filter((p) => selectedPropIds.includes(p.id)).map((p) => p.name).join(", ")}
+              </span>
+            )}
           </div>
-          <span>CINEMATIC · 24 FPS · 2.39:1</span>
+          <span style={{ fontSize: "10px", color: "#8a8894", letterSpacing: "0.5px", fontWeight: 700 }}>CINEMATIC · 24 FPS · 2.39:1</span>
         </div>
       </section>
 

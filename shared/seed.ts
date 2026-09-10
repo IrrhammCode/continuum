@@ -243,7 +243,7 @@ export const SETS: SetAsset[] = [
       "desert landscape",
       "crowded city street",
     ],
-    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
+    imageUrl: "/assets/vault/sky-garden.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -264,7 +264,7 @@ export const SETS: SetAsset[] = [
       "warm cozy room",
       "crowded street",
     ],
-    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3MWUvS3RWQUplcmdRRkUxcUFVOWdXTTdNLmpwZw.85e66edb7653a7de/KtVAJergQFE1qAU9gWM7M.jpg",
+    imageUrl: "/assets/vault/derelict-alpha.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
 ];

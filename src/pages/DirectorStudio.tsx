@@ -21,6 +21,9 @@ export function DirectorStudio() {
   const [selectedMotifIds, setSelectedMotifIds] = useState<string[]>([]);
   const [selectedPropIds, setSelectedPropIds] = useState<string[]>([]);
 
+  // Active step in the 7-step workflow
+  const [activeStepTab, setActiveStepTab] = useState<number>(1);
+
   // Project scenes & history drawer state
   const [projectScenes, setProjectScenes] = useState<SceneResult[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -30,17 +33,33 @@ export function DirectorStudio() {
     "Ren steps beneath the awning of a shuttered ramen shop. Yuki waits in the rain across the street, holding a broken transmitter. The city hum falls away as Ren recognizes the signal."
   );
 
-  // Pipeline state
+  // Pipeline execution state
   const [rendering, setRendering] = useState(false);
   const [currentStep, setCurrentStep] = useState(0);
   const [elapsedSec, setElapsedSec] = useState(0);
   const [currentPhaseMsg, setCurrentPhaseMsg] = useState("");
   const [lastResult, setLastResult] = useState<SceneResult | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [activeTab, setActiveTab] = useState<"continuity" | "provenance" | "json">("continuity");
+  const [inspectorTab, setInspectorTab] = useState<"triples" | "guards" | "json">("triples");
   const [renderError, setRenderError] = useState<string | null>(null);
+  const [selectedGraphNode, setSelectedGraphNode] = useState<string>("scene");
 
   const audioRef = useRef<HTMLAudioElement>(null);
+  const stepRefs = {
+    step1: useRef<HTMLDivElement>(null),
+    step2: useRef<HTMLDivElement>(null),
+    step3: useRef<HTMLDivElement>(null),
+    step4: useRef<HTMLDivElement>(null),
+    step5: useRef<HTMLDivElement>(null),
+    step6: useRef<HTMLDivElement>(null),
+    step7: useRef<HTMLDivElement>(null),
+  };
+
+  const scrollToStep = (stepNum: number) => {
+    setActiveStepTab(stepNum);
+    const key = `step${stepNum}` as keyof typeof stepRefs;
+    stepRefs[key]?.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   // ── Fetch vault data from backend ──
   useEffect(() => {
@@ -76,6 +95,16 @@ export function DirectorStudio() {
     setSelectedPropIds((prev) =>
       prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
     );
+  };
+
+  const toggleChar = (id: string) => {
+    if (selectedCharIds.includes(id)) {
+      if (selectedCharIds.length > 1) {
+        setSelectedCharIds(selectedCharIds.filter((c) => c !== id));
+      }
+    } else {
+      setSelectedCharIds([...selectedCharIds, id]);
+    }
   };
 
   const applyPreset = (key: "alley" | "skyline" | "derelict") => {
@@ -130,7 +159,6 @@ export function DirectorStudio() {
         if (scenes && scenes.length > 0) {
           setLastResult(scenes[scenes.length - 1]);
         } else {
-          // If no scenes yet for this project, reset lastResult
           if (activeProject.id !== "proj-ronin-echoes") {
             setLastResult(null);
           }
@@ -138,7 +166,6 @@ export function DirectorStudio() {
       })
       .catch(() => {});
 
-    // Adaptive sample prompt per project
     if (activeProject.id === "proj-solaris-drift") {
       setPrompt(
         "Dr. Vance enters the cryogenic junction of Derelict Station Alpha. Amber emergency strobes illuminate floating debris as the long-silent communicator chimes."
@@ -146,7 +173,7 @@ export function DirectorStudio() {
     }
   }, [activeProject?.id]);
 
-  // Handle vault navigation from Characters, Sets, Sound, and Props & Lore pages
+  // Handle vault navigation from Characters, Sets, Sound, and Props pages
   useEffect(() => {
     const state = location.state as {
       characterId?: string;
@@ -204,19 +231,10 @@ export function DirectorStudio() {
       setSelectedMotifIds(scene.request.cast.leitmotifIds);
     }
     setIsHistoryOpen(false);
+    scrollToStep(7);
   };
 
-  const toggleChar = (id: string) => {
-    if (selectedCharIds.includes(id)) {
-      if (selectedCharIds.length > 1) {
-        setSelectedCharIds(selectedCharIds.filter((c) => c !== id));
-      }
-    } else {
-      setSelectedCharIds([...selectedCharIds, id]);
-    }
-  };
-
-  // ── Get display names for selected items ──
+  // ── Selected names for bindings ──
   const selectedCharNames = vaultChars
     .filter((c) => selectedCharIds.includes(c.id))
     .map((c) => c.name);
@@ -241,6 +259,7 @@ export function DirectorStudio() {
     setCurrentStep(1);
     setElapsedSec(0);
     setCurrentPhaseMsg("Querying DKG Show Bible for character constraints…");
+    scrollToStep(6);
 
     const timer = setInterval(() => {
       setElapsedSec((s) => s + 1);
@@ -270,7 +289,6 @@ export function DirectorStudio() {
     };
 
     try {
-      // Try streaming endpoint first
       const streamRes = await fetch("/api/scenes/render-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -325,6 +343,7 @@ export function DirectorStudio() {
                 });
                 setCurrentStep(5);
                 setCurrentPhaseMsg("Scene rendered and verified. Knowledge Asset minted.");
+                scrollToStep(7);
               } else if (event === "error") {
                 setRenderError(data.error ?? "Rendering failed");
               }
@@ -332,7 +351,6 @@ export function DirectorStudio() {
           }
         }
       } else {
-        // Fallback to standard POST
         const res = await fetch("/api/scenes/render", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -346,6 +364,7 @@ export function DirectorStudio() {
             return exists ? prev : [...prev, data];
           });
           setCurrentStep(5);
+          scrollToStep(7);
         } else {
           const err = await res.json();
           setRenderError(err.error ?? "Unknown rendering error");
@@ -373,506 +392,662 @@ export function DirectorStudio() {
     setIsPlaying(!isPlaying);
   };
 
-  // Total cost of all outputs
   const totalCost = lastResult?.livepeerOutputs?.reduce((sum, o) => sum + (o.costUsd ?? 0), 0) ?? 0;
   const totalElapsed = lastResult?.livepeerOutputs?.reduce((sum, o) => sum + (o.elapsedMs ?? 0), 0) ?? 0;
 
   return (
     <section className="workspace">
-      {/* ── Top Scene Context ── */}
-      <div className="breadcrumb" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "10px" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-          <div className="project-selector-wrap">
-            <select
-              className="project-select-dropdown"
-              value={activeProject?.id ?? ""}
-              onChange={(e) => selectProjectId(e.target.value)}
-              aria-label="Select active project"
-            >
-              {projects.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.title}
-                </option>
-              ))}
-            </select>
+      {/* ── 7-Step Navigation Bar ── */}
+      <div className="match-stepper-wrap">
+        <nav className="match-stepper" aria-label="Director studio step navigation">
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 1 ? "active" : "completed"}`}
+            onClick={() => scrollToStep(1)}
+          >
+            <span className="match-step-num">01</span>
+            <span className="match-step-title">Universe</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 2 ? "active" : selectedCharIds.length > 0 ? "completed" : ""}`}
+            onClick={() => scrollToStep(2)}
+          >
+            <span className="match-step-num">02</span>
+            <span className="match-step-title">Cast ({selectedCharIds.length})</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 3 ? "active" : selectedSetId ? "completed" : ""}`}
+            onClick={() => scrollToStep(3)}
+          >
+            <span className="match-step-num">03</span>
+            <span className="match-step-title">Location</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 4 ? "active" : selectedPropIds.length > 0 ? "completed" : ""}`}
+            onClick={() => scrollToStep(4)}
+          >
+            <span className="match-step-num">04</span>
+            <span className="match-step-title">Gear & Props ({selectedPropIds.length})</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 5 ? "active" : prompt ? "completed" : ""}`}
+            onClick={() => scrollToStep(5)}
+          >
+            <span className="match-step-num">05</span>
+            <span className="match-step-title">Director's Vision</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 6 ? "active" : rendering ? "completed" : ""}`}
+            onClick={() => scrollToStep(6)}
+          >
+            <span className="match-step-num">06</span>
+            <span className="match-step-title">Neural Engine</span>
+          </button>
+          <span className="match-step-divider"></span>
+
+          <button
+            type="button"
+            className={`match-step-item ${activeStepTab === 7 ? "active" : lastResult ? "completed" : ""}`}
+            onClick={() => scrollToStep(7)}
+          >
+            <span className="match-step-num">07</span>
+            <span className="match-step-title">Master Take & Graph</span>
+          </button>
+        </nav>
+      </div>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 1: PILIH PROJECT / UNIVERSE
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step1} className="studio-step-section">
+        <header className="studio-step-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 01 / 07</span>
+              <span className="studio-step-badge status-ok">Canon Locked</span>
+              <span className="studio-step-badge status-match">OriginTrail DKG v8</span>
+            </div>
+            <h2 className="studio-step-title">Universe & Production Scope</h2>
+            <p className="studio-step-desc">
+              Select the active production universe. The OriginTrail DKG Show Bible enforces character continuity, environment palettes, and recurring sonic leitmotifs across every scene.
+            </p>
           </div>
-          <Icon name="chevron" size={14} />
-          <span>SEASON {String(activeProject?.seasonNumber ?? 1).padStart(2, "0")}</span>
-          <Icon name="chevron" size={14} />
-          <b>EPISODE 01 · SCENE {String((projectScenes.length || 0) + 1).padStart(2, "0")}</b>
-        </div>
 
-        <button
-          type="button"
-          className="outline-button"
-          onClick={() => setIsHistoryOpen(true)}
-          style={{ display: "flex", alignItems: "center", gap: "6px", fontSize: "11px", fontWeight: 700, padding: "5px 12px", background: "#fff" }}
-        >
-          <span>Project Scenes ({projectScenes.length})</span>
-        </button>
-      </div>
+          <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <button type="button" className="outline-button" onClick={() => setIsHistoryOpen(true)}>
+              Project Archive ({projectScenes.length})
+            </button>
+            <button type="button" className="outline-button" onClick={() => navigate("/episodes")}>
+              <Icon name="layers" size={15} /> Storyboard View
+            </button>
+          </div>
+        </header>
 
-      <div className="scene-head">
-        <div>
-          <p className="eyebrow">
-            DIRECTOR STUDIO / {activeProject?.title?.toUpperCase() ?? "CYBERPUNK: RONIN ECHOES"}
-          </p>
-          <h1>
-            The rain remembers <span>every name.</span>
-          </h1>
-        </div>
-        <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-          <button className="outline-button" onClick={() => setIsHistoryOpen(true)}>
-            View History ({projectScenes.length})
-          </button>
-          <button className="outline-button" onClick={() => navigate("/episodes")}>
-            <Icon name="layers" size={16} /> Storyboard View
-          </button>
-        </div>
-      </div>
-
-      {/* ── Cast, Location & Props Palette ── */}
-      <div className="context-strip" style={{ flexWrap: "wrap", gap: "18px", alignItems: "flex-start" }}>
-        {/* Cast Selection */}
-        <div className="context-block">
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-            CAST <span style={{ background: "#7657d8", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>{selectedCharIds.length} SELECTED</span>
-          </label>
-          <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {vaultChars.map((c) => {
-              const isSelected = selectedCharIds.includes(c.id);
-              return (
-                <button
-                  key={c.id}
-                  type="button"
-                  className={`person-chip ${isSelected ? "selected" : ""}`}
-                  onClick={() => toggleChar(c.id)}
-                  title={`Click to toggle ${c.name}`}
-                  style={{
-                    borderColor: isSelected ? "#7657d8" : "#e2e0e7",
-                    background: isSelected ? "#f5f0ff" : "#ffffff",
-                    boxShadow: isSelected ? "0 0 0 1.5px #7657d8, 0 3px 8px rgba(118,87,216,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "6px 14px 6px 6px",
-                    borderRadius: "12px",
-                    transition: "all 0.15s ease",
-                    cursor: "pointer",
-                  }}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "#f8f7fa", border: "1px solid #e7e5ec", borderRadius: "12px", padding: "14px 18px", flexWrap: "wrap", gap: "12px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "14px", flexWrap: "wrap" }}>
+            <div>
+              <span style={{ fontSize: "10px", color: "#7c7a88", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+                Active Production
+              </span>
+              <div className="project-selector-wrap" style={{ display: "inline-block" }}>
+                <select
+                  className="project-select-dropdown"
+                  value={activeProject?.id ?? ""}
+                  onChange={(e) => selectProjectId(e.target.value)}
+                  aria-label="Select active project"
+                  style={{ fontSize: "13px", fontWeight: 700, padding: "6px 28px 6px 12px" }}
                 >
-                  {c.avatarUrl ? (
-                    <img
-                      src={c.avatarUrl}
-                      alt={c.name}
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "8px",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
-                        border: isSelected ? "2px solid #7657d8" : "1px solid rgba(0,0,0,0.08)",
-                      }}
-                    />
-                  ) : (
-                    <div style={{ width: "42px", height: "42px", borderRadius: "8px", background: "linear-gradient(135deg, #7657d8, #a78bfa)", display: "flex", alignItems: "center", justifyContent: "center", color: "#fff", fontWeight: 700, fontSize: "14px" }}>
-                      {c.name.slice(0, 2).toUpperCase()}
-                    </div>
-                  )}
-                  <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{c.name}</span>
-                    <span style={{ fontSize: "10.5px", color: isSelected ? "#7657d8" : "#7c7a88", fontWeight: 500 }}>
-                      {c.epithet ? c.epithet.slice(0, 24) : "Canon Character"}
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div style={{ height: "30px", width: "1px", background: "#dcd9e4" }}></div>
+
+            <div>
+              <span style={{ fontSize: "10px", color: "#7c7a88", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em", display: "block", marginBottom: "4px" }}>
+                Episode Anchor
+              </span>
+              <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", fontFamily: "DM Mono" }}>
+                SEASON {String(activeProject?.seasonNumber ?? 1).padStart(2, "0")} · EPISODE 01 · SCENE {String((projectScenes.length || 0) + 1).padStart(2, "0")}
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "11px", color: "#6b687a", fontStyle: "italic" }}>
+              "{activeProject?.logline ?? "A rogue swordsman uncovers a synthetic conspiracy in the rain."}"
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 2: CAST MAU SIAPA (DATING APP MATCHMAKING PROFILE CARDS)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step2} className="studio-step-section">
+        <header className="studio-step-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 02 / 07</span>
+              <span className="studio-step-badge status-match">Matchmaker Active</span>
+              <span className="studio-step-badge status-ok">{selectedCharIds.length} Matched</span>
+            </div>
+            <h2 className="studio-step-title">Cast Matchmaker</h2>
+            <p className="studio-step-desc">
+              Who is meeting in this scene? Select character profiles to pair them into the dramatic sequence. Face seeds and signature visual DNA are locked via OriginTrail DKG to eliminate actor drift.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => navigate("/vault")}
+            style={{ fontSize: "12px", padding: "6px 14px" }}
+          >
+            Character Vault →
+          </button>
+        </header>
+
+        {/* Dating App Profile Cards */}
+        <div className="dating-cast-grid">
+          {vaultChars.map((c, idx) => {
+            const isSelected = selectedCharIds.includes(c.id);
+            const matchPercent = idx === 0 ? "99.8%" : idx === 1 ? "99.4%" : "98.9%";
+
+            return (
+              <article
+                key={c.id}
+                className={`dating-cast-card ${isSelected ? "selected" : ""}`}
+                onClick={() => toggleChar(c.id)}
+              >
+                <div className="dating-cast-poster">
+                  <img
+                    src={c.avatarUrl || "/assets/continuity/ren-anchor-1.jpg"}
+                    alt={c.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/assets/continuity/ren-anchor-1.jpg";
+                    }}
+                  />
+                  <div className="dating-cast-gradient" />
+                  <div className="dating-cast-dna-pill">Face Seed Locked</div>
+                  <div className={`dating-match-score ${isSelected ? "perfect" : ""}`}>
+                    <span>{matchPercent}</span> Match
+                  </div>
+                </div>
+
+                <div className="dating-cast-body">
+                  <div className="dating-cast-name-row">
+                    <h3 className="dating-cast-name">{c.name}</h3>
+                    <span style={{ fontSize: "10px", fontFamily: "DM Mono", color: "#94a3b8" }}>
+                      DID:{c.id.slice(-6)}
                     </span>
                   </div>
-                  {isSelected && (
-                    <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#7657d8", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon name="check" size={11} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <span className="dating-cast-alias">
+                    {c.epithet || "Canon Protagonist"}
+                  </span>
+                  <p className="dating-cast-bio">
+                    {c.visualDna?.attire?.canonical || "Exiled blade master navigating high-frequency synthetic shadows in the rain."}
+                  </p>
 
-        {/* Setting Selection */}
-        <div className="context-block setting">
-          <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-            LOCATION <span style={{ background: "#0d9488", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>DKG ANCHORED</span>
-          </label>
-          <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-            {vaultSets.map((s) => {
-              const isSelected = selectedSetId === s.id;
-              const displayImg = s.name.includes("Garden")
-                ? "/assets/vault/sky-garden.jpg"
-                : s.name.includes("Derelict")
-                ? "/assets/vault/derelict-alpha.jpg"
-                : (s.imageUrl && !s.imageUrl.includes("example.invalid") ? s.imageUrl : "/assets/continuity/ren-anchor-1.jpg");
-              return (
-                <button
-                  key={s.id}
-                  type="button"
-                  className={`place-chip ${isSelected ? "selected" : ""}`}
-                  onClick={() => setSelectedSetId(s.id)}
-                  style={{
-                    borderColor: isSelected ? "#0d9488" : "#e2e0e7",
-                    background: isSelected ? "#f0fdfa" : "#ffffff",
-                    boxShadow: isSelected ? "0 0 0 1.5px #0d9488, 0 3px 8px rgba(13,148,136,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: "10px",
-                    padding: "6px 14px 6px 6px",
-                    borderRadius: "12px",
-                    transition: "all 0.15s ease",
-                    cursor: "pointer",
-                  }}
-                >
+                  <div className="dating-cast-tags">
+                    <span className="dating-tag">Visual DNA</span>
+                    <span className="dating-tag">{c.visualDna?.distinguishingFeatures?.[0] || "Face Seed Locked"}</span>
+                    <span className="dating-tag">Zero Drift</span>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="dating-cast-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      toggleChar(c.id);
+                    }}
+                  >
+                    {isSelected ? (
+                      <>
+                        <Icon name="check" size={14} />
+                        <span>Matched to Scene</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Match Cast Profile</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 3: LOCATION MAU APA (STAGING & VENUE MATCH)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step3} className="studio-step-section">
+        <header className="studio-step-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 03 / 07</span>
+              <span className="studio-step-badge status-ok">Environment Anchored</span>
+            </div>
+            <h2 className="studio-step-title">Staging & Rendezvous Venue</h2>
+            <p className="studio-step-desc">
+              Where are they meeting? Select the spatial set. The DKG Show Bible enforces architectural dimensions, volumetric light palettes, and atmospheric weather.
+            </p>
+          </div>
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => navigate("/sets")}
+            style={{ fontSize: "12px", padding: "6px 14px" }}
+          >
+            Sets & Staging Vault →
+          </button>
+        </header>
+
+        <div className="dating-venue-grid">
+          {vaultSets.map((s) => {
+            const isSelected = selectedSetId === s.id;
+            const displayImg = s.name.includes("Garden")
+              ? "/assets/vault/sky-garden.jpg"
+              : s.name.includes("Derelict")
+              ? "/assets/vault/derelict-alpha.jpg"
+              : s.imageUrl && !s.imageUrl.includes("example.invalid")
+              ? s.imageUrl
+              : "/assets/continuity/ren-anchor-1.jpg";
+
+            return (
+              <article
+                key={s.id}
+                className={`dating-venue-card ${isSelected ? "selected" : ""}`}
+                onClick={() => setSelectedSetId(s.id)}
+              >
+                <div className="dating-venue-thumb">
                   <img
                     src={displayImg}
                     alt={s.name}
                     onError={(e) => {
                       (e.currentTarget as HTMLImageElement).src = "/assets/continuity/ren-anchor-1.jpg";
                     }}
-                    style={{
-                      width: "62px",
-                      height: "42px",
-                      borderRadius: "8px",
-                      objectFit: "cover",
-                      flexShrink: 0,
-                      boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
-                      border: isSelected ? "2px solid #0d9488" : "1px solid rgba(0,0,0,0.08)",
-                    }}
                   />
-                  <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
-                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{s.name}</span>
-                    <span style={{ fontSize: "10.5px", color: isSelected ? "#0d9488" : "#7c7a88", fontWeight: 500 }}>
-                      {s.timeOfDay || "Atmospheric Set"}
-                    </span>
-                  </div>
-                  {isSelected && (
-                    <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#0d9488", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                      <Icon name="check" size={11} />
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
+                  <div className="dating-venue-match-pill">100% Atmosphere Match</div>
+                </div>
 
-        {/* Props & Gear Selection */}
-        {vaultProps.length > 0 && (
-          <div className="context-block props-block" style={{ width: "100%" }}>
-            <label style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
-              PROPS & GEAR <span style={{ background: "#d97706", color: "#fff", padding: "1px 7px", borderRadius: "10px", fontSize: "10px", fontWeight: 700 }}>{selectedPropIds.length} SELECTED</span>
-            </label>
-            <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
-              {vaultProps.map((p) => {
-                const isSelected = selectedPropIds.includes(p.id);
-                const displayImg = p.name.includes("Katana")
-                  ? "/assets/continuity/ren-anchor-2.jpg"
-                  : (p.name.includes("Cartridge") || p.name.includes("Transmitter"))
-                  ? "/assets/vault/sky-garden.jpg"
-                  : (p.imageUrl && !p.imageUrl.includes("example.invalid") ? p.imageUrl : "/assets/vault/derelict-alpha.jpg");
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    className={`person-chip prop-chip ${isSelected ? "selected" : ""}`}
-                    onClick={() => toggleProp(p.id)}
-                    title={p.description}
-                    style={{
-                      borderColor: isSelected ? "#d97706" : "#e2e0e7",
-                      background: isSelected ? "#fffbeb" : "#ffffff",
-                      boxShadow: isSelected ? "0 0 0 1.5px #d97706, 0 3px 8px rgba(217,119,6,0.18)" : "0 1px 3px rgba(0,0,0,0.06)",
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      padding: "6px 14px 6px 6px",
-                      borderRadius: "12px",
-                      transition: "all 0.15s ease",
-                      cursor: "pointer",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                <div className="dating-venue-body">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "4px" }}>
+                    <h3 className="dating-venue-name">{s.name}</h3>
+                    {isSelected && (
+                      <span style={{ width: "20px", height: "20px", borderRadius: "50%", background: "#0d9488", color: "#fff", display: "grid", placeItems: "center" }}>
+                        <Icon name="check" size={12} />
+                      </span>
+                    )}
+                  </div>
+                  <span className="dating-venue-sub">
+                    {s.timeOfDay || "Rain-slicked Midnight"} · Volumetric Cyan
+                  </span>
+                  <div className="dating-venue-chips">
+                    <span className="dating-venue-chip">DKG Spatially Anchored</span>
+                    <span className="dating-venue-chip">2.39:1 Aspect Ratio</span>
+                  </div>
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 4: PROPS & GEAR MAU APA (INVENTORY MATCH)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      {vaultProps.length > 0 && (
+        <section ref={stepRefs.step4} className="studio-step-section">
+          <header className="studio-step-header">
+            <div>
+              <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+                <span className="studio-step-badge step-num">Step 04 / 07</span>
+                <span className="studio-step-badge status-match">{selectedPropIds.length} Props Injected</span>
+              </div>
+              <h2 className="studio-step-title">Canonical Props & Gear</h2>
+              <p className="studio-step-desc">
+                What equipment or lore artifacts are carried into the scene? Selecting props injects verified physical descriptions and negative anti-drift guards into the neural pipeline.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              className="outline-button"
+              onClick={() => navigate("/props")}
+              style={{ fontSize: "12px", padding: "6px 14px" }}
+            >
+              Props & Lore Registry →
+            </button>
+          </header>
+
+          <div className="dating-gear-grid">
+            {vaultProps.map((p) => {
+              const isSelected = selectedPropIds.includes(p.id);
+              const displayImg = p.name.includes("Katana")
+                ? "/assets/continuity/ren-anchor-2.jpg"
+                : p.name.includes("Cartridge") || p.name.includes("Transmitter")
+                ? "/assets/vault/sky-garden.jpg"
+                : p.imageUrl && !p.imageUrl.includes("example.invalid")
+                ? p.imageUrl
+                : "/assets/vault/derelict-alpha.jpg";
+
+              return (
+                <div
+                  key={p.id}
+                  className={`dating-gear-card ${isSelected ? "selected" : ""}`}
+                  onClick={() => toggleProp(p.id)}
+                >
+                  <div className="dating-gear-thumb">
                     <img
                       src={displayImg}
                       alt={p.name}
                       onError={(e) => {
                         (e.currentTarget as HTMLImageElement).src = "/assets/vault/derelict-alpha.jpg";
                       }}
-                      style={{
-                        width: "42px",
-                        height: "42px",
-                        borderRadius: "8px",
-                        objectFit: "cover",
-                        flexShrink: 0,
-                        boxShadow: "0 2px 4px rgba(0,0,0,0.12)",
-                        border: isSelected ? "2px solid #d97706" : "1px solid rgba(0,0,0,0.08)",
-                      }}
                     />
-                    <div style={{ textAlign: "left", display: "flex", flexDirection: "column" }}>
-                      <span style={{ fontSize: "13px", fontWeight: 700, color: "#181725", lineHeight: 1.2 }}>{p.name}</span>
-                      <span style={{ fontSize: "10.5px", color: isSelected ? "#d97706" : "#7c7a88", fontWeight: 500 }}>
-                        {p.type || (p.category === "lore" ? "Canon Lore" : "Physical Prop")}
-                      </span>
+                  </div>
+                  <div className="dating-gear-info">
+                    <h4 className="dating-gear-name">{p.name}</h4>
+                    <p className="dating-gear-desc">{p.description}</p>
+                    <span className="dating-gear-badge">
+                      {p.category === "lore" ? "Canon Lore Object" : "Physical Equipment"}
+                    </span>
+                  </div>
+                  {isSelected && (
+                    <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#d97706", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
+                      <Icon name="check" size={13} />
                     </div>
-                    {isSelected && (
-                      <span style={{ marginLeft: "4px", width: "18px", height: "18px", borderRadius: "50%", background: "#d97706", color: "#fff", display: "inline-flex", alignItems: "center", justifyContent: "center" }}>
-                        <Icon name="check" size={11} />
-                      </span>
-                    )}
-                  </button>
-                );
-              })}
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+      )}
+
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 5: DIRECTOR'S VISION & DIRECTIVES (DIRECTOR MAU APA)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step5} className="studio-step-section">
+        <header className="studio-step-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 05 / 07</span>
+              <span className="studio-step-badge status-match">Neuro-Symbolic Directives</span>
+            </div>
+            <h2 className="studio-step-title">Director's Vision & Blocking</h2>
+            <p className="studio-step-desc">
+              Specify the camera angle, dramatic pacing, and lighting mood. Presets can be appended directly into the directorial instructions below.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ background: "#f8f7fa", border: "1px solid #e1dfeb", borderRadius: "10px", padding: "6px 14px", display: "flex", alignItems: "center", gap: "8px" }}>
+              <Icon name="wave" size={16} />
+              <div>
+                <span style={{ fontSize: "9px", color: "#8a8894", fontWeight: 700, textTransform: "uppercase", display: "block" }}>
+                  Bound Leitmotif
+                </span>
+                <strong style={{ fontSize: "11px", color: "#181725" }}>
+                  {selectedMotif?.name ?? "Ren's Blade"} · {selectedMotif?.key ?? "D Minor"}
+                </strong>
+              </div>
             </div>
           </div>
-        )}
+        </header>
 
-        {/* Bound Sound Leitmotif */}
-        <div className="motif" style={{ marginLeft: "auto", background: "#fbfaf8", border: "1px solid #e2e0e7", padding: "8px 16px", borderRadius: "12px", display: "flex", alignItems: "center", gap: "10px" }}>
-          <div style={{ width: "34px", height: "34px", borderRadius: "8px", background: "#fef3c7", color: "#d97706", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Icon name="wave" size={18} />
-          </div>
-          <div>
-            <small style={{ fontSize: "10px", color: "#8a8894", fontWeight: 700, display: "block" }}>BOUND LEITMOTIF</small>
-            <strong style={{ fontSize: "12.5px", color: "#181725" }}>
-              {selectedMotif?.name ?? "None"} <span style={{ color: "#7657d8", fontWeight: 600 }}>· {selectedMotif?.key ?? ""}</span>
-            </strong>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Director's Intention & Action Prompt ── */}
-      <section className="director-panel" style={{ marginTop: "18px", borderRadius: "14px", border: "1px solid #dfdce4", background: "#ffffff", padding: "18px 20px", boxShadow: "0 2px 10px rgba(0,0,0,0.03)" }}>
-        <div className="director-panel-top" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
-          <div>
-            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
-              <p className="eyebrow" style={{ margin: 0, fontSize: "13px", fontWeight: 800, letterSpacing: "0.8px", color: "#181725" }}>DIRECTOR'S INTENTION & BLOCKING</p>
-              <span style={{ fontSize: "10px", fontWeight: 700, background: "#ede9fe", color: "#6d28d9", padding: "2px 8px", borderRadius: "12px" }}>
-                ✨ NEURO-SYMBOLIC PIPELINE
-              </span>
-            </div>
-            <span style={{ fontSize: "12px", color: "#6b687a" }}>
-              Direct camera trajectory, scene blocking, and dramatic character action. DKG Knowledge Assets continuously anchor facial geometry, lighting schemas, and leitmotifs to eliminate visual drift.
-            </span>
-          </div>
-          <button className="constraint" onClick={() => navigate("/vault")} style={{ flexShrink: 0 }}>
-            <Icon name="lock" size={13} /> DKG Canon Guards Active
-          </button>
-        </div>
-
-        {/* Cinematic Framing & Mood Directives */}
-        <div style={{ background: "#f8f7fa", border: "1px solid #ebe8f0", borderRadius: "10px", padding: "10px 14px", marginBottom: "14px" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.5px", minWidth: "90px" }}>
-              CAMERA SHOT:
+        {/* Camera & Lighting Directive Chips (ZERO EMOJIS) */}
+        <div style={{ background: "#f8f7fa", border: "1px solid #ebe8f0", borderRadius: "12px", padding: "14px", marginBottom: "16px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.06em", minWidth: "90px" }}>
+              CAMERA LENS:
             </span>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("2.39:1 Anamorphic Wide Tracking Shot")}>
-              🎥 Anamorphic Wide
+              [2.39:1 Anamorphic Wide]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Macro Close-Up on Ocular Implant with Retinal HUD")}>
-              🔍 Macro Retinal Focus
+              [Macro Retinal HUD]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Low-Angle Hero Stance with Wet Asphalt Reflections")}>
-              🎬 Low-Angle Hero
+              [Low-Angle Hero]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Over-the-Shoulder Tracking Shot through Heavy Downpour")}>
-              🌧️ Over-the-Shoulder
+              [OTS Downpour Tracking]
             </button>
           </div>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "6px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.5px", minWidth: "90px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "10px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.06em", minWidth: "90px" }}>
               ATMOSPHERE:
             </span>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Volumetric Neon Fog and Glistening Acid Rain Streaks")}>
-              ⚡ Neon Fog & Rain
+              [Volumetric Neon Fog & Rain]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Bioluminescent Moonlit Glow and Drifting Plant Mist")}>
-              🌌 Moonlit Flora
+              [Moonlit Flora]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Rhythmic Amber Emergency Strobes in Zero-G Void")}>
-              🚨 Amber Zero-G Strobes
+              [Amber Zero-G Strobes]
             </button>
             <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Cyan Holographic Glitch Distortions")}>
-              💻 Holographic Glitch
+              [Cyan Holographic Glitch]
+            </button>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.06em", minWidth: "90px" }}>
+              STORY PRESETS:
+            </span>
+            <button type="button" className="preset-chip-btn" onClick={() => applyPreset("alley")}>
+              [Rain Alley Standoff]
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => applyPreset("skyline")}>
+              [Skyline Data Breach]
+            </button>
+            <button type="button" className="preset-chip-btn" onClick={() => applyPreset("derelict")}>
+              [Derelict Cryo Echo]
             </button>
           </div>
         </div>
 
-        {/* Quick Story Presets */}
-        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "10px 0 12px", alignItems: "center" }}>
-          <span style={{ fontSize: "10px", fontWeight: 800, color: "#8a8894", letterSpacing: "0.5px" }}>
-            STORY PRESETS:
-          </span>
-          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("alley")}>
-            ⚡ Rain Alley Standoff
-          </button>
-          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("skyline")}>
-            ⚡ Skyline Data Breach
-          </button>
-          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("derelict")}>
-            ⚡ Derelict Cryo Echo
-          </button>
-        </div>
-
-        {/* Prompt Textarea */}
+        {/* Prompt Input Textarea */}
         <textarea
           rows={3}
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="Describe your scene direction, blocking, camera movement, and character actions..."
+          placeholder="Describe your scene direction, blocking, camera trajectory, and character action..."
           disabled={rendering}
-          style={{ width: "100%", borderRadius: "10px", padding: "12px 14px", fontSize: "14px", lineHeight: "1.5", border: "1px solid #d4d0dc" }}
+          style={{
+            width: "100%",
+            borderRadius: "10px",
+            padding: "14px 16px",
+            fontSize: "14px",
+            lineHeight: "1.5",
+            border: "1px solid #d4d0dc",
+            fontFamily: "inherit",
+          }}
         />
 
-        {/* Live Active Canon Injection Strip */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "8px", flexWrap: "wrap", gap: "8px" }}>
+        {/* Active Canon Injections Strip */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: "12px", flexWrap: "wrap", gap: "10px" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" }}>
-            <span style={{ fontSize: "10.5px", color: "#6b687a", fontWeight: 700 }}>DKG BINDINGS:</span>
+            <span style={{ fontSize: "10px", color: "#7c7a88", fontWeight: 800, textTransform: "uppercase" }}>
+              DKG BOUND CONSTRAINTS:
+            </span>
             {selectedCharNames.length > 0 && (
-              <span style={{ fontSize: "10.5px", background: "#f5f0ff", color: "#6d28d9", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
-                🎭 {selectedCharNames.join(", ")}
+              <span style={{ fontSize: "11px", background: "#f5f0ff", color: "#6d28d9", padding: "3px 9px", borderRadius: "6px", fontWeight: 600 }}>
+                Cast: {selectedCharNames.join(", ")}
               </span>
             )}
             {selectedSet && (
-              <span style={{ fontSize: "10.5px", background: "#f0fdfa", color: "#0f766e", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
-                📍 {selectedSet.name}
+              <span style={{ fontSize: "11px", background: "#f0fdfa", color: "#0f766e", padding: "3px 9px", borderRadius: "6px", fontWeight: 600 }}>
+                Set: {selectedSet.name}
               </span>
             )}
             {selectedPropIds.length > 0 && (
-              <span style={{ fontSize: "10.5px", background: "#fffbeb", color: "#b45309", padding: "2px 8px", borderRadius: "6px", fontWeight: 600 }}>
-                🗡️ {vaultProps.filter((p) => selectedPropIds.includes(p.id)).map((p) => p.name).join(", ")}
+              <span style={{ fontSize: "11px", background: "#fffbeb", color: "#b45309", padding: "3px 9px", borderRadius: "6px", fontWeight: 600 }}>
+                Props: {vaultProps.filter((p) => selectedPropIds.includes(p.id)).map((p) => p.name).join(", ")}
               </span>
             )}
           </div>
-          <span style={{ fontSize: "10px", color: "#8a8894", letterSpacing: "0.5px", fontWeight: 700 }}>CINEMATIC · 24 FPS · 2.39:1</span>
+
+          <button
+            type="button"
+            className={`direct-button ${rendering ? "is-rendering" : ""}`}
+            onClick={handleDirectScene}
+            disabled={rendering}
+            style={{ padding: "10px 22px" }}
+          >
+            <Icon name={rendering ? "spark" : "play"} size={17} />
+            <span>{rendering ? `Synthesizing (${elapsedSec}s)…` : "Direct Scene Take"}</span>
+            <Icon name="arrow" size={17} />
+          </button>
         </div>
       </section>
 
-      {/* ── Render Pipeline Action Bar ── */}
-      <section className="render-row">
-        <div className="pipeline">
-          <div className="pipeline-label">
-            <span>RENDER PIPELINE</span>
-            <b>{rendering ? `GENERATING CINEMATIC MEDIA (${elapsedSec}s)…` : "READY TO DIRECT"}</b>
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 6: NEURAL SYNTHESIS PIPELINE (LOADING PROGRESS)
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step6} className="studio-step-section">
+        <header className="studio-step-header">
+          <div>
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 06 / 07</span>
+              <span className={`studio-step-badge ${rendering ? "status-match" : "status-ok"}`}>
+                {rendering ? "Synthesizing Stream" : "Engine Ready"}
+              </span>
+            </div>
+            <h2 className="studio-step-title">Neural Synthesis Engine</h2>
+            <p className="studio-step-desc">
+              Live multi-agent coordination between Livepeer AI subnet workers and OriginTrail Decentralized Knowledge Graph.
+            </p>
           </div>
-          <ol>
-            <li className={currentStep >= 1 || (!rendering && lastResult) ? "done" : ""}>
-              <Icon name="check" size={13} />
-              <span>DKG constraints</span>
-            </li>
-            <li
-              className={
-                currentStep >= 2 || (!rendering && lastResult)
-                  ? "done"
-                  : currentStep === 1
-                  ? "active"
-                  : ""
-              }
-            >
-              <Icon name="check" size={13} />
-              <span>Keyframe (Flux)</span>
-            </li>
-            <li
-              className={
-                currentStep >= 3 || (!rendering && lastResult)
-                  ? "done"
-                  : currentStep === 2
-                  ? "active"
-                  : ""
-              }
-            >
-              <i></i>
-              <span>Animate (Pixverse)</span>
-            </li>
-            <li
-              className={
-                currentStep >= 4 || (!rendering && lastResult)
-                  ? "done"
-                  : currentStep === 3
-                  ? "active"
-                  : ""
-              }
-            >
-              <i></i>
-              <span>Audio (Sonilo)</span>
-            </li>
-            <li
-              className={
-                currentStep >= 5 || (!rendering && lastResult)
-                  ? "done"
-                  : currentStep === 4
-                  ? "active"
-                  : ""
-              }
-            >
-              <i></i>
-              <span>Mint Scene KA</span>
-            </li>
-          </ol>
-          {rendering && currentPhaseMsg && (
-            <div style={{ marginTop: "8px", fontSize: "12px", color: "#7657d8", fontWeight: 500, display: "flex", alignItems: "center", gap: "6px" }}>
-              <span style={{ display: "inline-block", width: "6px", height: "6px", borderRadius: "50%", background: "#7657d8", animation: "pulse 1.2s infinite" }}></span>
-              {currentPhaseMsg}
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontFamily: "DM Mono", fontSize: "12px", color: rendering ? "#7657d8" : "#64748b", fontWeight: 700 }}>
+              {rendering ? `ELAPSED: ${elapsedSec}s` : "READY"}
+            </span>
+          </div>
+        </header>
+
+        <div className="neural-synthesis-card">
+          <div className="neural-synthesis-header">
+            <div>
+              <span style={{ fontSize: "11px", color: "#a5b4fc", fontFamily: "DM Mono", textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                PIPELINE STAGE TELEMETRY
+              </span>
+              <h3 style={{ fontSize: "17px", fontWeight: 700, margin: "4px 0 0", color: "#ffffff" }}>
+                {rendering ? currentPhaseMsg : lastResult ? "Pipeline Finished · Knowledge Asset Minted" : "Standby · Ready to Synthesize"}
+              </h3>
+            </div>
+          </div>
+
+          <div className="neural-steps-grid">
+            <div className={`neural-step-box ${currentStep >= 1 || (!rendering && lastResult) ? "done" : ""}`}>
+              <div className="neural-step-title">Stage 01</div>
+              <div className="neural-step-name">DKG Show Bible Query</div>
+            </div>
+
+            <div className={`neural-step-box ${currentStep >= 2 || (!rendering && lastResult) ? "done" : currentStep === 1 ? "active" : ""}`}>
+              <div className="neural-step-title">Stage 02</div>
+              <div className="neural-step-name">Keyframe (Flux.1)</div>
+            </div>
+
+            <div className={`neural-step-box ${currentStep >= 3 || (!rendering && lastResult) ? "done" : currentStep === 2 ? "active" : ""}`}>
+              <div className="neural-step-title">Stage 03</div>
+              <div className="neural-step-name">Motion (Kling / Pixverse)</div>
+            </div>
+
+            <div className={`neural-step-box ${currentStep >= 4 || (!rendering && lastResult) ? "done" : currentStep === 3 ? "active" : ""}`}>
+              <div className="neural-step-title">Stage 04</div>
+              <div className="neural-step-name">Audio Score (Sonilo)</div>
+            </div>
+
+            <div className={`neural-step-box ${currentStep >= 5 || (!rendering && lastResult) ? "done" : currentStep === 4 ? "active" : ""}`}>
+              <div className="neural-step-title">Stage 05</div>
+              <div className="neural-step-name">Mint Scene KA</div>
+            </div>
+          </div>
+
+          {rendering && (
+            <div style={{ width: "100%", height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "2px", overflow: "hidden" }}>
+              <div style={{ width: `${Math.min(currentStep * 20, 100)}%`, height: "100%", background: "linear-gradient(90deg, #7657d8, #34d399)", transition: "width 0.4s ease" }}></div>
             </div>
           )}
         </div>
-
-        <button
-          className={`direct-button ${rendering ? "is-rendering" : ""}`}
-          onClick={handleDirectScene}
-          disabled={rendering}
-        >
-          <Icon name={rendering ? "spark" : "play"} size={17} />
-          {rendering ? `Rendering (${elapsedSec}s)…` : "Direct scene"}
-          <Icon name="arrow" size={17} />
-        </button>
       </section>
 
-      {/* ── Rendered Scene Output ── */}
-      <section className="output-section">
-        <div className="section-heading">
+      {/* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+          STEP 7: HASIL VIDEO + MUSIC & EMBEDDED DKG GRAPH
+          ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */}
+      <section ref={stepRefs.step7} className="studio-step-section">
+        <header className="studio-step-header">
           <div>
-            <p className="eyebrow">RENDERED SCENE OUTPUT</p>
-            <h2>Episode 01 — Scene 03: Signal in the rain</h2>
-          </div>
-          <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-            <button
-              className="outline-button"
-              style={{ fontSize: "12px", padding: "6px 12px" }}
-              onClick={() => navigate("/graph")}
-            >
-              <Icon name="graph" size={13} /> DKG Knowledge Mesh
-            </button>
-            <div className="version">
-              <span></span> DKG ANCHORED VERSION
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "6px" }}>
+              <span className="studio-step-badge step-num">Step 07 / 07</span>
+              <span className="studio-step-badge status-ok">Master Take Verified</span>
+              <span className="studio-step-badge status-match">DKG Provenance Minted</span>
             </div>
+            <h2 className="studio-step-title">Master Take & Knowledge Mesh</h2>
+            <p className="studio-step-desc">
+              Synchronized video master, audio score, and interactive OriginTrail DKG Knowledge Graph representation of this scene.
+            </p>
           </div>
-        </div>
+
+          <button
+            type="button"
+            className="outline-button"
+            onClick={() => navigate("/graph")}
+            style={{ fontSize: "12px", padding: "6px 14px" }}
+          >
+            <Icon name="graph" size={14} /> Full Knowledge Mesh →
+          </button>
+        </header>
 
         {renderError && (
-          <div style={{ background: "#fef3f2", border: "1px solid #fca5a5", borderRadius: "8px", padding: "12px 16px", marginBottom: "16px", fontSize: "13px", color: "#b91c1c" }}>
-            <strong>Render Error:</strong> {renderError}
+          <div style={{ background: "#fef3f2", border: "1px solid #fca5a5", borderRadius: "10px", padding: "14px 16px", marginBottom: "18px", fontSize: "13px", color: "#b91c1c" }}>
+            <strong>Synthesis Error:</strong> {renderError}
           </div>
         )}
 
+        {/* Video & Provenance Grid */}
         <div className="output-grid">
-          {/* Cinema Screen Frame — REAL MEDIA */}
+          {/* Cinema Screen Frame */}
           <article className="cinema-frame">
             <div className="frame-top">
               <span className="verified">
                 <Icon name="check" size={12} /> DKG VERIFIED
               </span>
               <span className="time">
-                {hasRealVideo ? "VIDEO" : hasRealMedia ? "KEYFRAME" : "00:05 / 00:12"}
+                {hasRealVideo ? "VIDEO MASTER" : hasRealMedia ? "KEYFRAME" : "2.39:1 CINEMATIC"}
               </span>
             </div>
 
-            {/* Render real media or fallback CSS canvas */}
             {hasRealVideo ? (
               <video
                 src={videoOutput!.url}
@@ -907,7 +1082,6 @@ export function DirectorStudio() {
               />
             ) : (
               <>
-                {/* Fallback CSS Canvas */}
                 <div className="rain rain-one"></div>
                 <div className="rain rain-two"></div>
                 <div className="city">
@@ -934,16 +1108,15 @@ export function DirectorStudio() {
             )}
 
             <div className="frame-bottom">
-              {hasRealMedia && (
-                <div style={{ display: "flex", gap: "8px", fontSize: "10px", fontFamily: "DM Mono", color: "#aaa" }}>
+              {hasRealMedia ? (
+                <div style={{ display: "flex", gap: "8px", fontSize: "10px", fontFamily: "DM Mono", color: "#aaa", flexWrap: "wrap" }}>
                   {lastResult?.livepeerOutputs?.map((o, i) => (
                     <span key={i} style={{ background: "#1a1a2e", padding: "2px 8px", borderRadius: "4px" }}>
                       {o.capability} · {(o.elapsedMs / 1000).toFixed(1)}s · ${o.costUsd.toFixed(3)}
                     </span>
                   ))}
                 </div>
-              )}
-              {!hasRealMedia && (
+              ) : (
                 <>
                   <div className="progress">
                     <i style={{ width: isPlaying ? "80%" : "42%" }}></i>
@@ -954,55 +1127,56 @@ export function DirectorStudio() {
             </div>
           </article>
 
-          {/* Clean Provenance Card */}
+          {/* Provenance Card */}
           <aside className="provenance">
             <div className="provenance-head">
-              <p className="eyebrow">PROVENANCE LINEAGE</p>
+              <p className="eyebrow" style={{ margin: 0 }}>PROVENANCE LINEAGE</p>
               <button
                 onClick={() => navigate("/graph")}
-                title="View in Knowledge Graph"
                 style={{ fontSize: "11px", color: "#7657d8", fontWeight: 700 }}
               >
-                View Graph →
+                Explore Mesh →
               </button>
             </div>
 
             <div className="origin-node scene-node">
               <span>SCENE KNOWLEDGE ASSET</span>
-              <strong>Signal in the Rain</strong>
-              <small>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</small>
+              <strong>{lastResult?.ual ? `Scene ${lastResult.request.sceneNumber || 1}` : "Signal in the Rain"}</strong>
+              <small style={{ overflow: "hidden", textOverflow: "ellipsis" }}>
+                {lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}
+              </small>
             </div>
 
             <div className="tree-line"></div>
 
             <div className="source-nodes">
               <div className="origin-node ren-node">
-                <span>CHARACTER</span>
-                <strong>{selectedCharNames.join(", ") || "Select cast"}</strong>
-                <small>VISUAL DNA</small>
+                <span>CHARACTER DNA</span>
+                <strong>{selectedCharNames.join(", ") || "Ren"}</strong>
+                <small>VISUAL SEED</small>
               </div>
               <div className="origin-node set-node">
-                <span>LOCATION</span>
-                <strong>{selectedSet?.name.split(" ")[0] ?? "Select set"}</strong>
-                <small>LIGHTING</small>
+                <span>LOCATION KA</span>
+                <strong>{selectedSet?.name.split(" ")[0] ?? "Neo-Tokyo"}</strong>
+                <small>SPATIAL SEED</small>
               </div>
             </div>
 
             {hasRealMedia && totalCost > 0 && (
               <div style={{ marginTop: "12px", padding: "8px 12px", background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "6px", fontSize: "11px" }}>
-                <strong>Livepeer Cost:</strong> ${totalCost.toFixed(4)} · <strong>Render Time:</strong> {(totalElapsed / 1000).toFixed(1)}s
+                <strong>Livepeer Cost:</strong> ${totalCost.toFixed(4)} · <strong>Render:</strong> {(totalElapsed / 1000).toFixed(1)}s
               </div>
             )}
 
             <div className="provenance-note">
-              <Icon name="lock" size={15} />
-              <span>Zero visual drift guaranteed by OriginTrail DKG</span>
+              <Icon name="lock" size={14} />
+              <span>Zero drift guaranteed by OriginTrail DKG</span>
             </div>
           </aside>
         </div>
 
         {/* Audio Leitmotif Bar */}
-        <div className="audio-bar">
+        <div className="audio-bar" style={{ marginTop: "16px" }}>
           <button
             className="audio-play"
             onClick={toggleAudio}
@@ -1015,7 +1189,7 @@ export function DirectorStudio() {
             <span>{selectedMotif?.bpm ?? 120} BPM · {selectedMotif?.key ?? "D MINOR"}</span>
           </div>
           <div className="waveform">▁▃▅▇▆▂▃▅▂▁▄▆▇▅▃▆▂▁▃▅▇▆▃▁▅▇▃▁</div>
-          <span>{hasRealAudio ? "LIVE" : "00:12"}</span>
+          <span>{hasRealAudio ? "LIVE AUDIO" : "00:12"}</span>
           <button onClick={() => navigate("/sound")} title="Open sonic vault">
             <Icon name="wave" size={17} />
           </button>
@@ -1023,87 +1197,321 @@ export function DirectorStudio() {
             <audio ref={audioRef} src={audioOutput!.url} preload="auto" />
           )}
         </div>
-      </section>
 
-      {/* ── Inspector Tabs ── */}
-      <section className="inspector-tabs">
-        <div className="tab-list">
-          <button
-            onClick={() => setActiveTab("continuity")}
-            className={activeTab === "continuity" ? "active" : ""}
-          >
-            Continuity Rules & DNA
-          </button>
-          <button
-            onClick={() => setActiveTab("provenance")}
-            className={activeTab === "provenance" ? "active" : ""}
-          >
-            Injected Negative Guards
-          </button>
-          <button
-            onClick={() => setActiveTab("json")}
-            className={activeTab === "json" ? "active" : ""}
-          >
-            OriginTrail JSON-LD
-          </button>
+        {/* ── Interactive DKG Knowledge Graph Canvas ── */}
+        <div className="embedded-graph-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+            <div>
+              <span style={{ fontSize: "10px", fontFamily: "DM Mono", color: "#7657d8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+                INTERACTIVE DKG TOPOLOGY
+              </span>
+              <h4 style={{ fontSize: "15px", fontWeight: 700, margin: "2px 0 0", color: "#181725" }}>
+                RDF Graph Links for Active Scene Take
+              </h4>
+            </div>
+            <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+              <span style={{ fontSize: "10px", background: "#f1f5f9", padding: "3px 8px", borderRadius: "6px", fontFamily: "DM Mono" }}>
+                Node: <strong>{selectedGraphNode.toUpperCase()}</strong>
+              </span>
+              <button
+                type="button"
+                className="outline-button"
+                onClick={() => navigate("/graph")}
+                style={{ fontSize: "11px", padding: "4px 10px" }}
+              >
+                Inspect Full Graph →
+              </button>
+            </div>
+          </div>
+
+          {/* SVG Knowledge Graph Diagram */}
+          <div className="embedded-graph-canvas">
+            <svg width="100%" height="100%" viewBox="0 0 800 280" preserveAspectRatio="xMidYMid meet">
+              <defs>
+                <linearGradient id="gradScene" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#7657d8" />
+                  <stop offset="100%" stopColor="#4f46e5" />
+                </linearGradient>
+                <linearGradient id="gradChar" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#ec4899" />
+                  <stop offset="100%" stopColor="#be185d" />
+                </linearGradient>
+                <linearGradient id="gradSet" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#0d9488" />
+                  <stop offset="100%" stopColor="#0f766e" />
+                </linearGradient>
+                <linearGradient id="gradProp" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#f59e0b" />
+                  <stop offset="100%" stopColor="#d97706" />
+                </linearGradient>
+                <linearGradient id="gradSound" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#06b6d4" />
+                  <stop offset="100%" stopColor="#0891b2" />
+                </linearGradient>
+                <linearGradient id="gradWorker" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" />
+                  <stop offset="100%" stopColor="#059669" />
+                </linearGradient>
+              </defs>
+
+              {/* Connecting RDF Lines */}
+              <line x1="400" y1="140" x2="150" y2="60" stroke="#ec4899" strokeWidth="2" strokeDasharray="4,4" opacity="0.65" />
+              <text x="260" y="90" fill="#f472b6" fontSize="9" fontFamily="DM Mono">schema:actor</text>
+
+              <line x1="400" y1="140" x2="150" y2="220" stroke="#0d9488" strokeWidth="2" strokeDasharray="4,4" opacity="0.65" />
+              <text x="250" y="195" fill="#2dd4bf" fontSize="9" fontFamily="DM Mono">schema:location</text>
+
+              <line x1="400" y1="140" x2="650" y2="60" stroke="#f59e0b" strokeWidth="2" strokeDasharray="4,4" opacity="0.65" />
+              <text x="520" y="90" fill="#fbbf24" fontSize="9" fontFamily="DM Mono">schema:instrument</text>
+
+              <line x1="400" y1="140" x2="650" y2="220" stroke="#06b6d4" strokeWidth="2" strokeDasharray="4,4" opacity="0.65" />
+              <text x="510" y="195" fill="#38bdf8" fontSize="9" fontFamily="DM Mono">schema:soundtrack</text>
+
+              <line x1="400" y1="140" x2="400" y2="40" stroke="#10b981" strokeWidth="2" strokeDasharray="4,4" opacity="0.65" />
+              <text x="410" y="80" fill="#34d399" fontSize="9" fontFamily="DM Mono">prov:wasGeneratedBy</text>
+
+              {/* Node 1: Scene Center */}
+              <g
+                transform="translate(400, 140)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("scene")}
+              >
+                <circle r="38" fill="url(#gradScene)" filter="drop-shadow(0 0 10px rgba(118,87,216,0.6))" />
+                <circle r="42" fill="none" stroke="#a78bfa" strokeWidth="1.5" opacity="0.8" />
+                <text textAnchor="middle" y="-4" fill="#ffffff" fontSize="10" fontWeight="bold" fontFamily="sans-serif">
+                  SCENE KA
+                </text>
+                <text textAnchor="middle" y="12" fill="#e0e7ff" fontSize="8" fontFamily="DM Mono">
+                  did:dkg:scene
+                </text>
+              </g>
+
+              {/* Node 2: Cast (Top-Left) */}
+              <g
+                transform="translate(150, 60)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("character")}
+              >
+                <circle r="28" fill="url(#gradChar)" />
+                <text textAnchor="middle" y="-2" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">
+                  CAST
+                </text>
+                <text textAnchor="middle" y="10" fill="#fce7f3" fontSize="8" fontFamily="DM Mono">
+                  {selectedCharNames[0] || "Ren"}
+                </text>
+              </g>
+
+              {/* Node 3: Set (Bottom-Left) */}
+              <g
+                transform="translate(150, 220)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("set")}
+              >
+                <circle r="28" fill="url(#gradSet)" />
+                <text textAnchor="middle" y="-2" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">
+                  SET
+                </text>
+                <text textAnchor="middle" y="10" fill="#ccfbf1" fontSize="8" fontFamily="DM Mono">
+                  {selectedSet?.name.split(" ")[0] || "Location"}
+                </text>
+              </g>
+
+              {/* Node 4: Prop (Top-Right) */}
+              <g
+                transform="translate(650, 60)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("prop")}
+              >
+                <circle r="28" fill="url(#gradProp)" />
+                <text textAnchor="middle" y="-2" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">
+                  PROP
+                </text>
+                <text textAnchor="middle" y="10" fill="#fef3c7" fontSize="8" fontFamily="DM Mono">
+                  {vaultProps.find((p) => selectedPropIds.includes(p.id))?.name.split(" ")[0] || "Gear"}
+                </text>
+              </g>
+
+              {/* Node 5: Sound (Bottom-Right) */}
+              <g
+                transform="translate(650, 220)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("sound")}
+              >
+                <circle r="28" fill="url(#gradSound)" />
+                <text textAnchor="middle" y="-2" fill="#ffffff" fontSize="9" fontWeight="bold" fontFamily="sans-serif">
+                  LEITMOTIF
+                </text>
+                <text textAnchor="middle" y="10" fill="#cffafe" fontSize="8" fontFamily="DM Mono">
+                  {selectedMotif?.name.split(" ")[0] || "Motif"}
+                </text>
+              </g>
+
+              {/* Node 6: Livepeer MCP Worker (Top-Center) */}
+              <g
+                transform="translate(400, 36)"
+                style={{ cursor: "pointer" }}
+                onClick={() => setSelectedGraphNode("livepeer")}
+              >
+                <circle r="22" fill="url(#gradWorker)" />
+                <text textAnchor="middle" y="-2" fill="#ffffff" fontSize="8" fontWeight="bold" fontFamily="sans-serif">
+                  LIVEPEER
+                </text>
+                <text textAnchor="middle" y="9" fill="#d1fae5" fontSize="7" fontFamily="DM Mono">
+                  MCP Agent
+                </text>
+              </g>
+            </svg>
+          </div>
         </div>
 
-        <div className="tab-content" style={{ display: "block", paddingTop: "14px" }}>
-          {activeTab === "continuity" && (
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <Icon name="graph" size={18} />
-              <span>
-                <strong>Characters Locked:</strong> {selectedCharNames.join(", ")} ·{" "}
-                <strong>Attire:</strong> Long black armored trenchcoat with neon-green circuit-trace trim ·{" "}
-                <strong>Lighting:</strong> Volumetric neon fog, wet asphalt reflections.
-              </span>
-            </div>
-          )}
-
-          {activeTab === "provenance" && (
-            <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-              <Icon name="lock" size={18} />
-              <span>
-                <strong>{lastResult?.dkgConstraints?.negativePromptsInjected?.length ?? 17} Anti-Drift Guards Active:</strong>{" "}
-                {lastResult?.dkgConstraints?.negativePromptsInjected?.join(", ") ??
-                  "no blond hair, no blue eyes, no missing cheek scar, no casual t-shirts, no cheerful smiles, no daylight, no rural forest."}
-              </span>
-            </div>
-          )}
-
-          {activeTab === "json" && (
-            <pre
-              style={{
-                background: "#f4f1ec",
-                padding: "12px",
-                borderRadius: "6px",
-                fontFamily: "DM Mono",
-                fontSize: "10px",
-                lineHeight: 1.5,
-                overflowX: "auto",
-                margin: 0,
-              }}
+        {/* ── DKG Asset Inspector Tabs ── */}
+        <div className="inspector-tabs" style={{ marginTop: "18px" }}>
+          <div className="tab-list">
+            <button
+              onClick={() => setInspectorTab("triples")}
+              className={inspectorTab === "triples" ? "active" : ""}
             >
-              {lastResult
-                ? JSON.stringify(
-                    {
-                      "@id": lastResult.ual,
-                      "prov:wasDerivedFrom": lastResult.lineage.derivedFrom,
-                      "ex:promptFingerprint": lastResult.lineage.provenance.promptFingerprint,
-                      "ex:livepeerOutputs": lastResult.livepeerOutputs?.map((o) => ({
-                        type: o.type,
-                        capability: o.capability,
-                        url: o.url,
-                        costUsd: o.costUsd,
-                        elapsedMs: o.elapsedMs,
-                      })),
-                    },
-                    null,
-                    2
-                  )
-                : `{\n  "@context": "https://schema.org",\n  "@type": "schema:VideoObject",\n  "@id": "did:dkg:continuum/scene/b9033c9626ca57b4",\n  "prov:wasDerivedFrom": [\n    "did:dkg:continuum/character/7d81bcb44509921c",\n    "did:dkg:continuum/set/b9d5c845a07638c9"\n  ]\n}`}
-            </pre>
-          )}
+              RDF Knowledge Triples ({lastResult ? 6 : 4})
+            </button>
+            <button
+              onClick={() => setInspectorTab("guards")}
+              className={inspectorTab === "guards" ? "active" : ""}
+            >
+              Negative Anti-Drift Guards ({lastResult?.dkgConstraints?.negativePromptsInjected?.length ?? 12})
+            </button>
+            <button
+              onClick={() => setInspectorTab("json")}
+              className={inspectorTab === "json" ? "active" : ""}
+            >
+              OriginTrail W3C JSON-LD
+            </button>
+          </div>
+
+          <div className="tab-content" style={{ display: "block", paddingTop: "14px" }}>
+            {inspectorTab === "triples" && (
+              <table className="dkg-triples-table">
+                <thead>
+                  <tr>
+                    <th>SUBJECT</th>
+                    <th>PREDICATE</th>
+                    <th>OBJECT / VALUE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</code></td>
+                    <td><code>schema:actor</code></td>
+                    <td><code>did:dkg:continuum/character/{selectedCharIds[0] || "ren"} ({selectedCharNames.join(", ") || "Ren"})</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</code></td>
+                    <td><code>schema:locationCreated</code></td>
+                    <td><code>did:dkg:continuum/set/{selectedSetId || "neo-tokyo"} ({selectedSet?.name ?? "Neo-Tokyo Alley"})</code></td>
+                  </tr>
+                  {selectedPropIds.length > 0 && (
+                    <tr>
+                      <td><code>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</code></td>
+                      <td><code>schema:instrument</code></td>
+                      <td><code>did:dkg:continuum/prop/{selectedPropIds[0]} ({vaultProps.find((p) => p.id === selectedPropIds[0])?.name})</code></td>
+                    </tr>
+                  )}
+                  <tr>
+                    <td><code>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</code></td>
+                    <td><code>schema:soundtrack</code></td>
+                    <td><code>did:dkg:continuum/leitmotif/{selectedMotifIds[0] || "rens-blade"} ({selectedMotif?.name ?? "Ren's Blade"})</code></td>
+                  </tr>
+                  <tr>
+                    <td><code>{lastResult?.ual ?? "did:dkg:continuum/scene/b9033c9626ca57b4"}</code></td>
+                    <td><code>prov:wasGeneratedBy</code></td>
+                    <td><code>livepeer:agent:text-to-video (Kling / Flux.1)</code></td>
+                  </tr>
+                </tbody>
+              </table>
+            )}
+
+            {inspectorTab === "guards" && (
+              <div style={{ padding: "8px 4px" }}>
+                <p style={{ fontSize: "12px", color: "#6b687a", margin: "0 0 10px" }}>
+                  Active negative prompts injected during neural generation to enforce strict character and environment fidelity:
+                </p>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
+                  {(lastResult?.dkgConstraints?.negativePromptsInjected ?? [
+                    "no blond hair",
+                    "no blue eyes",
+                    "no missing cheek scar",
+                    "no casual t-shirts",
+                    "no cheerful smiles",
+                    "no daylight",
+                    "no rural forest",
+                    "no cartoonish rendering",
+                    "no low resolution artifacts",
+                    "no modern cars",
+                    "no wooden swords",
+                    "no sunny skies",
+                  ]).map((guard, idx) => (
+                    <span
+                      key={idx}
+                      style={{
+                        background: "#fee2e2",
+                        color: "#991b1b",
+                        border: "1px solid #fca5a5",
+                        borderRadius: "6px",
+                        padding: "3px 8px",
+                        fontSize: "11px",
+                        fontFamily: "DM Mono",
+                      }}
+                    >
+                      {guard}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {inspectorTab === "json" && (
+              <pre
+                style={{
+                  background: "#f4f1ec",
+                  padding: "12px",
+                  borderRadius: "6px",
+                  fontFamily: "DM Mono",
+                  fontSize: "10px",
+                  lineHeight: 1.5,
+                  overflowX: "auto",
+                  margin: 0,
+                }}
+              >
+                {lastResult
+                  ? JSON.stringify(
+                      {
+                        "@context": [
+                          "https://schema.org",
+                          "http://www.w3.org/ns/prov#",
+                          { "continuum": "https://continuum.livepeer.studio/ns#" }
+                        ],
+                        "@id": lastResult.ual,
+                        "@type": "schema:VideoObject",
+                        "schema:name": `Episode 01 Scene ${lastResult.request.sceneNumber || 1}`,
+                        "prov:wasDerivedFrom": lastResult.lineage?.derivedFrom ?? [
+                          `did:dkg:continuum/character/${selectedCharIds[0] || "ren"}`,
+                          `did:dkg:continuum/set/${selectedSetId || "neo-tokyo"}`
+                        ],
+                        "continuum:promptFingerprint": lastResult.lineage?.provenance?.promptFingerprint ?? "sha256:7e8912b40a931c8",
+                        "continuum:livepeerOutputs": lastResult.livepeerOutputs?.map((o) => ({
+                          type: o.type,
+                          capability: o.capability,
+                          url: o.url,
+                          costUsd: o.costUsd,
+                          elapsedMs: o.elapsedMs,
+                        })),
+                      },
+                      null,
+                      2
+                    )
+                  : `{\n  "@context": "https://schema.org",\n  "@type": "schema:VideoObject",\n  "@id": "did:dkg:continuum/scene/b9033c9626ca57b4",\n  "prov:wasDerivedFrom": [\n    "did:dkg:continuum/character/7d81bcb44509921c",\n    "did:dkg:continuum/set/b9d5c845a07638c9"\n  ]\n}`}
+              </pre>
+            )}
+          </div>
         </div>
       </section>
 
@@ -1174,7 +1582,7 @@ export function DirectorStudio() {
                             style={{ padding: "5px 12px", fontSize: "10px" }}
                             onClick={() => handleLoadScene(scene)}
                           >
-                            Load Scene ↗
+                            Load Scene →
                           </button>
                         </div>
                       </div>
@@ -1190,7 +1598,7 @@ export function DirectorStudio() {
                     No scenes directed for {activeProject?.title} yet.
                   </h4>
                   <p style={{ fontSize: "12px", color: "#888", maxWidth: "300px", margin: "0 auto 20px", lineHeight: 1.5 }}>
-                    Enter direction in the prompt box and click "Direct scene" to render the pilot scene via Livepeer and OriginTrail DKG.
+                    Enter direction in the prompt box and click "Direct Scene Take" to render via Livepeer and OriginTrail DKG.
                   </p>
                   <button className="mint-button" onClick={() => setIsHistoryOpen(false)}>
                     Start Directing Now →

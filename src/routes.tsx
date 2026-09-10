@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { createBrowserRouter, Link, useNavigate } from "react-router";
-import { StudioShell } from "./components/StudioShell";
+import { StudioShell, Icon } from "./components/StudioShell";
 import { DirectorStudio } from "./pages/DirectorStudio";
 import { ContinuumLogo } from "./components/ContinuumLogo";
 import type { CharacterAsset, SetAsset, LeitmotifAsset, GraphData, GraphNode, SceneResult, Project, PropAsset } from "@shared/types";
@@ -2125,7 +2125,7 @@ export function Sound() {
 
                 <footer className="sound-drawer-footer">
                   <button type="submit" className="synthesize-cta-btn" disabled={generatingSound}>
-                    <span>⚡</span>
+                    <Icon name="spark" size={14} />
                     <span>Synthesize Neural Audio with Livepeer Agent →</span>
                   </button>
                   <p className="sound-dkg-note">
@@ -2569,7 +2569,7 @@ export function Graph() {
                   )}
 
                   <div className="lineage-selected" style={{ fontWeight: "bold", margin: "12px 0 10px", padding: "8px", borderRadius: "4px" }}>
-                    ⭐ {activeSelected.label} ({activeSelected.type})
+                    [SELECTED] {activeSelected.label} ({activeSelected.type})
                   </div>
 
                   <p style={{ fontSize: "11px", color: "#666", marginBottom: "8px" }}>

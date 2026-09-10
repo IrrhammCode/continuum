@@ -1695,4 +1695,293 @@ button:active,
   }
 }
 
+/* ── 15. Image Overrides & Silhouette Cleanup ── */
+.character-portrait.has-image:after {
+  display: none !important;
+}
+
+.set-shot.has-image:before,
+.set-shot.has-image:after {
+  display: none !important;
+}
+
+.lore-object.has-image {
+  background: #0f1015 !important;
+}
+
+.lore-object.has-image::before,
+.lore-object.has-image::after {
+  display: none !important;
+}
+
+/* ── 16. Sound & Voice Drawer Footer & Synthesis CTA ── */
+.sound-drawer-footer {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  justify-content: flex-start !important;
+  background: transparent !important;
+  padding: 20px 0 0 !important;
+  border-top: 1px solid #ede9f4 !important;
+  margin-top: auto !important;
+  width: 100% !important;
+}
+
+.synthesize-cta-btn {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  width: 100% !important;
+  padding: 14px 20px !important;
+  background: linear-gradient(135deg, #181726 0%, #30245a 50%, #151325 100%) !important;
+  color: #ffffff !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.05em !important;
+  border: 1px solid #7657d877 !important;
+  border-radius: 8px !important;
+  cursor: pointer !important;
+  box-shadow: 0 4px 18px rgba(118, 87, 216, 0.25) !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.synthesize-cta-btn:hover {
+  background: linear-gradient(135deg, #271f45 0%, #4c328f 50%, #201a38 100%) !important;
+  border-color: #a78bfa !important;
+  box-shadow: 0 8px 24px rgba(118, 87, 216, 0.45) !important;
+  transform: translateY(-1px) !important;
+}
+
+.synthesize-cta-btn:active {
+  transform: scale(0.98) !important;
+}
+
+.synthesize-cta-btn:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+}
+
+.sound-dkg-note {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  font-family: 'DM Mono', monospace !important;
+  font-size: 9px !important;
+  letter-spacing: 0.04em !important;
+  color: #7b7987 !important;
+  margin: 10px 0 0 !important;
+  text-align: center !important;
+}
+
+.sound-dkg-note i {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981aa;
+}
+
+/* ── 17. Cyberpunk HUD Toast Notifications ── */
+.hud-toast-container {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  pointer-events: none;
+  max-width: min(440px, calc(100vw - 32px));
+}
+
+.hud-toast {
+  pointer-events: auto;
+  position: relative;
+  overflow: hidden;
+  background: rgba(18, 19, 26, 0.95);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 14px 16px 16px;
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  animation: hudToastSlideIn 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  color: #e5e7eb;
+}
+
+@keyframes hudToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateX(40px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.hud-toast.success {
+  border-color: rgba(16, 185, 129, 0.45);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 24px rgba(16, 185, 129, 0.18);
+}
+
+.hud-toast.error {
+  border-color: rgba(239, 68, 68, 0.55);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 24px rgba(239, 68, 68, 0.22);
+}
+
+.hud-toast.info,
+.hud-toast.warning {
+  border-color: rgba(118, 87, 216, 0.5);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.5), 0 0 24px rgba(118, 87, 216, 0.25);
+}
+
+.hud-toast-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.hud-toast-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  padding: 3px 7px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.hud-toast-badge.success {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
+.hud-toast-badge.error {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.hud-toast-badge.info,
+.hud-toast-badge.warning {
+  color: #c4b5fd;
+  background: rgba(118, 87, 216, 0.15);
+  border-color: rgba(118, 87, 216, 0.4);
+}
+
+.hud-pulse-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+  animation: pulseDot 1.4s ease-in-out infinite;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.hud-toast-close {
+  background: transparent;
+  border: none;
+  color: #898a96;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 0 4px;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.hud-toast-close:hover {
+  color: #ffffff;
+}
+
+.hud-toast-title {
+  margin: 0 0 4px;
+  font-family: 'Playfair Display', serif;
+  font-size: 15px;
+  font-weight: 600;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.hud-toast-msg {
+  margin: 0;
+  font-family: 'Manrope', sans-serif;
+  font-size: 11px;
+  line-height: 1.5;
+  color: #a2a3b0;
+}
+
+.hud-toast-ual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 6px 9px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.hud-toast-ual:hover {
+  background: rgba(118, 87, 216, 0.15);
+  border-color: rgba(118, 87, 216, 0.45);
+}
+
+.hud-ual-label {
+  font-family: 'DM Mono', monospace;
+  font-size: 8px;
+  font-weight: 700;
+  color: #34d399;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.hud-ual-text {
+  font-family: 'DM Mono', monospace;
+  font-size: 9px;
+  color: #cbd5e1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+}
+
+.hud-copy-icon {
+  font-size: 11px;
+  color: #8b8a95;
+}
+
+.hud-toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 100%;
+  background: linear-gradient(90deg, #7657d8, #10b981);
+  animation: hudProgressLinear linear forwards;
+  transform-origin: left;
+}
+
+@keyframes hudProgressLinear {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
 

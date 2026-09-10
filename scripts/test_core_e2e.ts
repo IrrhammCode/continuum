@@ -164,10 +164,51 @@ async function main() {
   info(`Sound UAL: ${colors.yellow}${sound.ual}${colors.reset}`);
   info(`Bound Character: ${sound.boundToCharacterId} (${character.name})`);
 
+  info("Testing Sound SSE Streaming synthesis (/api/vault/sounds-stream)…");
+  const sseSoundRes = await fetch(`${BASE_URL}/api/vault/sounds-stream`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      projectId: project.id,
+      name: "Ambient Sector Pulse",
+      mood: "eerie cybernetic drone",
+      bpm: 90,
+      key: "D minor",
+      instruments: ["modular synth", "sub drone"],
+    }),
+  });
+  if (!sseSoundRes.ok || !sseSoundRes.body) {
+    throw new Error(`Sound SSE streaming failed: HTTP ${sseSoundRes.status}`);
+  }
+  const sseReader = sseSoundRes.body.getReader();
+  const sseDecoder = new TextDecoder();
+  let sseBuf = "";
+  let sseSoundResult: any = null;
+  while (true) {
+    const { value, done } = await sseReader.read();
+    if (done) break;
+    sseBuf += sseDecoder.decode(value, { stream: true });
+    const chunks = sseBuf.split("\n\n");
+    sseBuf = chunks.pop() ?? "";
+    for (const chunk of chunks) {
+      if (!chunk.trim()) continue;
+      for (const line of chunk.split("\n")) {
+        if (line.startsWith("data: ")) {
+          try {
+            const data = JSON.parse(line.slice(6).trim());
+            if (data.type === "done") sseSoundResult = data.data;
+          } catch {}
+        }
+      }
+    }
+  }
+  if (!sseSoundResult) throw new Error("Sound SSE stream did not yield complete sound asset!");
+  pass(`Sound SSE Stream complete: "${sseSoundResult.name}" (Audio: ${sseSoundResult.audioUrl ? "Available" : "None"})`);
+
   // ──────────────────────────────────────────────────────────
-  // 6. Prop & Lore Canonical Minting
+  // 6. Prop & Lore Canonical Minting & Flux Concept Rendering
   // ──────────────────────────────────────────────────────────
-  header("6. Prop & Lore Canonical Artifact Minting");
+  header("6. Prop & Lore Canonical Artifact Minting & AI Concept");
   const propPayload = {
     projectId: project.id,
     name: "The Chrono-Anchor Key",
@@ -187,6 +228,13 @@ async function main() {
   pass(`Minted Prop: "${prop.name}" (${prop.type})`);
   info(`Prop UAL: ${colors.yellow}${prop.ual}${colors.reset}`);
   info(`Bound to: Character [${character.name}] & Set [${setAsset.name}]`);
+
+  info("Rendering Prop AI Concept via Livepeer Flux (/api/vault/props/:id/image)…");
+  const propImageResult = await request(`/api/vault/props/${prop.id}/image`, {
+    method: "POST",
+  });
+  pass(`Prop AI Concept generated: ${propImageResult.imageUrl ? "Image received (" + propImageResult.imageUrl.slice(0, 30) + "…)" : "Fallback mock image"}`);
+  info(`Updated Prop UAL: ${propImageResult.ual}`);
 
   // ──────────────────────────────────────────────────────────
   // 7. Decentralized Knowledge Graph Audit

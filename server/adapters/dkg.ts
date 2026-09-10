@@ -121,6 +121,7 @@ function propToJsonLd(p: PropAsset) {
     "ex:loreSignificance": p.loreSignificance,
     "ex:negativePrompts": p.negativePrompts ?? [],
     "ex:visualTheme": p.visualTheme,
+    "schema:image": p.imageUrl ?? null,
     "prov:generatedAtTime": p.createdAt,
   };
 }

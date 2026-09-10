@@ -5,6 +5,7 @@ import { DirectorStudio } from "./pages/DirectorStudio";
 import { ContinuumLogo } from "./components/ContinuumLogo";
 import type { CharacterAsset, SetAsset, LeitmotifAsset, GraphData, GraphNode, SceneResult, Project, PropAsset } from "@shared/types";
 import { useProject } from "./context/ProjectContext";
+import { useToast } from "./components/HudToast";
 import renDriftImg from "./assets/continuity/ren-drift.jpg";
 import renAnchor1Img from "./assets/continuity/ren-anchor-1.jpg";
 import renAnchor2Img from "./assets/continuity/ren-anchor-2.jpg";
@@ -245,6 +246,7 @@ function LineIcon({ type }: { type: "voice" | "music" | "x" | "play" }) {
 export function Characters() {
   const { projects, activeProject, selectProjectId } = useProject();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [drawer, setDrawer] = useState(false);
   const [query, setQuery] = useState("");
@@ -317,16 +319,16 @@ export function Characters() {
       setFormSkin("#FAE0C8");
       setFeatures(["silver-lavender hair", "violet holographic eye implants", "constellation temple tattoo"]);
       setFormAttire("Oversized dark-purple hoodie with holographic patterns, black leggings, purple sneakers");
-      setFormVoice("Soft, fast-paced, digital slang");
-      setFormNegative("no dark hair, no muscular build, no bright red");
+      setFormVoice("High, rapid, playful but razor-sharp");
+      setFormNegative("no corporate suits, no swords, no heavy armor");
     } else if (preset === "vance") {
-      setFormName("Dr. Alistair Vance");
-      setFormEpithet("The Derelict Astrobiologist");
-      setFormHair("#4A4A52");
-      setFormEye("#D4A373");
-      setFormSkin("#C58F68");
-      setFeatures(["amber telemetry visor with HUD", "frostbitten left eyebrow", "titanium neck collar seal"]);
-      setFormAttire("Weathered white reinforced EVA pressure suit, gold thermal chest harness, utility clips");
+      setFormName("Vance Vance");
+      setFormEpithet("The Synth-Archaeologist");
+      setFormHair("#4A3728");
+      setFormEye("#38BDF8");
+      setFormSkin("#E2B897");
+      setFeatures(["bionic audio antenna behind ear", "reinforced exo-gloves", "dust-stained lens visor"]);
+      setFormAttire("Weathered canvas duster with copper wire lining, high-collar hazard respirator");
       setFormVoice("Calm, analytical, echoey over suit comms");
       setFormNegative("no young teenager face, no casual streetwear, no firearms");
     } else if (preset === "fixer") {
@@ -348,12 +350,25 @@ export function Characters() {
       const res = await fetch(`/api/vault/characters/${charId}/avatar`, { method: "POST" });
       if (res.ok) {
         refreshCharacters();
+        showToast({
+          type: "success",
+          title: "AI Portrait Generated",
+          message: "Visual DNA rendered via Livepeer Agent (Flux) & bound to DKG!",
+        });
       } else {
-        const err = await res.json();
-        alert(`Avatar generation error: ${err.error}`);
+        const err = await res.json().catch(() => ({}));
+        showToast({
+          type: "error",
+          title: "Avatar Generation Error",
+          message: err.error ?? "Failed to generate character avatar",
+        });
       }
     } catch (e) {
-      alert(`Error: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Connection Error",
+        message: (e as Error).message,
+      });
     } finally {
       setGeneratingAvatarId(null);
     }
@@ -384,13 +399,26 @@ export function Characters() {
         const newChar: CharacterAsset = await res.json();
         refreshCharacters();
         setDrawer(false);
-        alert(`✓ Character "${newChar.name}" minted to DKG!\nUAL: ${newChar.ual}`);
+        showToast({
+          type: "success",
+          title: "Character Minted to DKG",
+          message: `Character "${newChar.name}" anchored with verifiable visual DNA!`,
+          ual: newChar.ual,
+        });
       } else {
-        const err = await res.json();
-        alert(`Minting failed: ${err.error}`);
+        const err = await res.json().catch(() => ({}));
+        showToast({
+          type: "error",
+          title: "Minting Failed",
+          message: err.error ?? "Character could not be minted",
+        });
       }
     } catch (e) {
-      alert(`Minting error: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Minting Error",
+        message: (e as Error).message,
+      });
     } finally {
       setMinting(false);
     }
@@ -400,9 +428,12 @@ export function Characters() {
 
   const visible = displayList.filter(
     (c) =>
-      `${c.name} ${c.epithet} ${c.visualDna?.distinguishingFeatures?.join(" ") ?? ""}`
-        .toLowerCase()
-        .includes(query.toLowerCase())
+      c.name.toLowerCase().includes(query.toLowerCase()) ||
+      c.epithet.toLowerCase().includes(query.toLowerCase()) ||
+      (c.visualDna?.distinguishingFeatures ?? []).some((f) =>
+        f.toLowerCase().includes(query.toLowerCase())
+      ) ||
+      (c.ual && c.ual.toLowerCase().includes(query.toLowerCase()))
   );
 
   return (
@@ -477,7 +508,7 @@ export function Characters() {
       <div className="character-grid">
         {visible.map((c) => (
           <article className="character-card" key={c.id || c.name}>
-            <div className={`character-portrait ${c.name.includes("Yuki") ? "yuki" : "ren"}`} style={{ position: "relative", overflow: "hidden" }}>
+            <div className={`character-portrait ${c.name.includes("Yuki") ? "yuki" : "ren"} ${c.avatarUrl ? "has-image" : ""}`} style={{ position: "relative", overflow: "hidden" }}>
               {c.avatarUrl && (
                 <img
                   src={c.avatarUrl}
@@ -488,7 +519,7 @@ export function Characters() {
               <span className="verify-pill" style={{ zIndex: 2 }}>
                 <i></i>DKG ANCHORED
               </span>
-              <div className="portrait-structure"></div>
+              {!c.avatarUrl && <div className="portrait-structure"></div>}
             </div>
             <div className="character-card-body">
               <div className="character-title">
@@ -775,6 +806,7 @@ export function Characters() {
 export function Sets() {
   const { projects, activeProject, selectProjectId } = useProject();
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   const [modal, setModal] = useState(false);
   const [setList, setSetList] = useState<SetAsset[]>([]);
@@ -820,21 +852,14 @@ export function Sets() {
     setTimeout(() => setCopiedUal(null), 2200);
   };
 
-  const applyPreset = (preset: "rain" | "derelict" | "garden" | "archive") => {
-    if (preset === "rain") {
+  const applySetPreset = (preset: "alley" | "garden" | "archive") => {
+    if (preset === "alley") {
       setSetFormName("Neo-Tokyo Rain District");
-      setSetFormDesc("A rain-soaked cyberpunk alley in a neon-drenched megacity. Towering holographic billboards flicker above narrow streets. Steam rises from sewer grates.");
+      setSetFormDesc("A rain-soaked cyberpunk alley in a neon-drenched megacity. Towering holographic billboards flicker above narrow streets.");
       setSetFormLighting("Volumetric neon fog, wet asphalt reflections, deep rim shadows");
       setSetFormTod("Night");
       setSetFormPalette(["#0A0A1A", "#7C3AED", "#00FF88", "#06B6D4"]);
       setSetFormNegative("no direct daylight, no rural greenery, no natural vegetation");
-    } else if (preset === "derelict") {
-      setSetFormName("Derelict Station Alpha — Cryo Junction");
-      setSetFormDesc("An abandoned orbital station corridor floating in zero-g around Kepler-452b. Emergency amber beacons pulse rhythmically. Frosted observation glass reveals deep-space stars.");
-      setSetFormLighting("Rhythmic amber emergency strobes, cold blue starlight from cracked viewports, volumetric zero-g dust motes");
-      setSetFormTod("Orbital Night");
-      setSetFormPalette(["#090D16", "#F59E0B", "#0284C7", "#334155"]);
-      setSetFormNegative("no earth city, no rain, no blue sky, no trees, no crowded street");
     } else if (preset === "garden") {
       setSetFormName("The Floating Sky Garden");
       setSetFormDesc("A suspended rooftop sanctuary atop the megacity, lit by bioluminescent moonwater pools, pale orchids, and tranquil night haze.");
@@ -858,12 +883,25 @@ export function Sets() {
       const res = await fetch(`/api/vault/sets/${setId}/image`, { method: "POST" });
       if (res.ok) {
         refreshSets();
+        showToast({
+          type: "success",
+          title: "Concept Art Rendered",
+          message: "Keyframe rendered via Livepeer Agent (Flux) & anchored to DKG!",
+        });
       } else {
-        const err = await res.json();
-        alert(`Concept art generation error: ${err.error}`);
+        const err = await res.json().catch(() => ({}));
+        showToast({
+          type: "error",
+          title: "Concept Art Error",
+          message: err.error ?? "Failed to generate concept art",
+        });
       }
     } catch (e) {
-      alert(`Error: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Connection Error",
+        message: (e as Error).message,
+      });
     } finally {
       setGeneratingImageId(null);
     }
@@ -891,13 +929,26 @@ export function Sets() {
         const newSet: SetAsset = await res.json();
         refreshSets();
         setModal(false);
-        alert(`✓ Set "${newSet.name}" minted to DKG!\nUAL: ${newSet.ual}`);
+        showToast({
+          type: "success",
+          title: "Environment Minted to DKG",
+          message: `Set "${newSet.name}" anchored to OriginTrail DKG!`,
+          ual: newSet.ual,
+        });
       } else {
-        const err = await res.json();
-        alert(`Minting failed: ${err.error}`);
+        const err = await res.json().catch(() => ({}));
+        showToast({
+          type: "error",
+          title: "Minting Failed",
+          message: err.error ?? "Set could not be minted",
+        });
       }
     } catch (e) {
-      alert(`Minting error: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Minting Error",
+        message: (e as Error).message,
+      });
     } finally {
       setMintingSet(false);
     }
@@ -964,7 +1015,7 @@ export function Sets() {
         {displaySets.map((set) => (
           <article className="set-card" key={set.id || set.name}>
             <div
-              className={`set-shot ${set.name.includes("Garden") ? "sky-garden" : "rain-city"}`}
+              className={`set-shot ${set.name.includes("Garden") ? "sky-garden" : "rain-city"} ${set.imageUrl ? "has-image" : ""}`}
               style={{ position: "relative", overflow: "hidden" }}
             >
               {set.imageUrl && (
@@ -981,8 +1032,8 @@ export function Sets() {
                 <span>TIME: {set.timeOfDay.toUpperCase()}</span>
                 <span>LIGHTING: {set.lightingSchema.split(",")[0].toUpperCase()}</span>
               </div>
-              <div className="neon-sign" style={{ zIndex: 2 }}>CONTINUUM</div>
-              <div className="garden-moon"></div>
+              {!set.imageUrl && <div className="neon-sign" style={{ zIndex: 2 }}>CONTINUUM</div>}
+              {!set.imageUrl && <div className="garden-moon"></div>}
             </div>
             <div className="set-body">
               <div className="set-title">
@@ -1343,75 +1394,127 @@ export function Sound() {
     setElapsedSec(0);
     setPhaseStatus("Querying DKG Show Bible & selecting Livepeer audio model...");
 
-    const timer = setInterval(() => {
-      setElapsedSec((s) => {
-        const next = s + 1;
-        if (next >= 12 && next < 30) {
-          setPhaseStatus("Synthesizing neural waveforms via Livepeer Agent (sonilo-music)...");
-        } else if (next >= 30) {
-          setPhaseStatus("Mastering neural stems & minting Audio Knowledge Asset on DKG...");
-        }
-        return next;
-      });
-    }, 1000);
+    const payload =
+      drawerTab === "leitmotif"
+        ? {
+            name: leitName.trim(),
+            boundToCharacterId: boundCharId || undefined,
+            mood,
+            bpm,
+            key: musicalKey,
+            instruments: selectedInstruments,
+            duration: 10,
+            projectId: targetProjectId,
+          }
+        : {
+            name: `${charList.find((c) => c.id === voiceCharId)?.name ?? "Character"} Voice Profile`,
+            boundToCharacterId: voiceCharId || undefined,
+            mood: `${voiceTone}, ${voicePace}, ${voiceAcoustic}`,
+            bpm: 90,
+            key: "A Minor",
+            instruments: ["Vocal Timbre", voiceAcoustic],
+            duration: 10,
+            projectId: targetProjectId,
+          };
 
     try {
-      const payload =
-        drawerTab === "leitmotif"
-          ? {
-              name: leitName.trim(),
-              boundToCharacterId: boundCharId || undefined,
-              mood,
-              bpm,
-              key: musicalKey,
-              instruments: selectedInstruments,
-              duration: 10,
-              projectId: targetProjectId,
-            }
-          : {
-              name: `${charList.find((c) => c.id === voiceCharId)?.name ?? "Character"} Voice Profile`,
-              boundToCharacterId: voiceCharId || undefined,
-              mood: `${voiceTone}, ${voicePace}, ${voiceAcoustic}`,
-              bpm: 90,
-              key: "A Minor",
-              instruments: ["Vocal Timbre", voiceAcoustic],
-              duration: 10,
-              projectId: targetProjectId,
-            };
-
-      const res = await fetch("/api/vault/sounds", {
+      const res = await fetch("/api/vault/sounds-stream", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      clearInterval(timer);
+      if (!res.ok || !res.body) {
+        // Fallback to sync endpoint
+        const syncRes = await fetch("/api/vault/sounds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (syncRes.ok) {
+          const created: LeitmotifAsset = await syncRes.json();
+          refreshSounds();
+          showToast({
+            type: "success",
+            title: "Leitmotif Minted to DKG",
+            message: `"${created.name}" generated & anchored to OriginTrail DKG!`,
+            ual: created.ual,
+          });
+          setAudioFeedback({
+            type: "success",
+            text: `Leitmotif "${created.name}" generated & minted to OriginTrail DKG!`,
+            ual: created.ual,
+            url: created.audioUrl,
+          });
+          setIsDrawerOpen(false);
+          return;
+        } else {
+          const err = await syncRes.json().catch(() => ({}));
+          throw new Error(err.error ?? "Sound synthesis failed");
+        }
+      }
 
-      if (res.ok) {
-        const created: LeitmotifAsset = await res.json();
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let finished = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) continue;
+          try {
+            const event = JSON.parse(line.replace("data: ", ""));
+            if (event.type === "phase" && event.message) {
+              setPhaseStatus(event.message);
+              if (typeof event.elapsed === "number") setElapsedSec(event.elapsed);
+            } else if (event.type === "done" && event.data) {
+              finished = true;
+              const created: LeitmotifAsset = event.data;
+              refreshSounds();
+              showToast({
+                type: "success",
+                title: "Leitmotif Minted to DKG",
+                message: `"${created.name}" generated & anchored to OriginTrail DKG!`,
+                ual: created.ual,
+              });
+              setAudioFeedback({
+                type: "success",
+                text: `Leitmotif "${created.name}" generated & minted to OriginTrail DKG!`,
+                ual: created.ual,
+                url: created.audioUrl,
+              });
+              setIsDrawerOpen(false);
+            } else if (event.type === "error") {
+              throw new Error(event.error ?? "Synthesis failed");
+            }
+          } catch (errParse) {
+            console.warn("[SoundStream] Parse event error:", errParse);
+          }
+        }
+      }
+
+      if (!finished) {
         refreshSounds();
-        setAudioFeedback({
-          type: "success",
-          text: `Leitmotif "${created.name}" generated & minted to OriginTrail DKG!`,
-          ual: created.ual,
-          url: created.audioUrl,
-        });
         setIsDrawerOpen(false);
-      } else {
-        const err = await res.json().catch(() => ({}));
-        setAudioFeedback({
-          type: "error",
-          text: `Synthesis failed: ${err.error ?? "Unknown error"}`,
-        });
       }
     } catch (err) {
-      clearInterval(timer);
+      showToast({
+        type: "error",
+        title: "Synthesis Error",
+        message: (err as Error).message,
+      });
       setAudioFeedback({
         type: "error",
-        text: `Error connecting to audio engine: ${(err as Error).message}`,
+        text: `Synthesis error: ${(err as Error).message}`,
       });
     } finally {
-      clearInterval(timer);
       setGeneratingSound(false);
     }
   };
@@ -2012,12 +2115,13 @@ export function Sound() {
                   </div>
                 </section>
 
-                <footer style={{ marginTop: "auto", padding: "18px 0 0" }}>
-                  <button type="submit" className="mint-button" style={{ width: "100%", padding: "14px" }}>
-                    Synthesize Neural Audio with Livepeer Agent →
+                <footer className="sound-drawer-footer">
+                  <button type="submit" className="synthesize-cta-btn" disabled={generatingSound}>
+                    <span>⚡</span>
+                    <span>Synthesize Neural Audio with Livepeer Agent →</span>
                   </button>
-                  <p style={{ textAlign: "center", fontSize: "10px", color: "#8b8a95", margin: "10px 0 0" }}>
-                    Audio asset will be anchored as an RDF Knowledge Asset on OriginTrail DKG
+                  <p className="sound-dkg-note">
+                    <i /> Audio asset will be anchored as an RDF Knowledge Asset on OriginTrail DKG
                   </p>
                 </footer>
               </form>
@@ -2541,6 +2645,7 @@ export function Episodes() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   const navigate = useNavigate();
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!activeProject?.id) return;
@@ -2642,6 +2747,12 @@ export function Episodes() {
         totalEpisodes: Number(newTotalEpisodes) || 3,
       });
 
+      showToast({
+        type: "success",
+        title: "Project Initialized",
+        message: `Project "${newTitle.trim()}" anchored into OriginTrail DKG!`,
+      });
+
       setIsCreateModalOpen(false);
       setNewTitle("");
       setNewLogline("");
@@ -2711,7 +2822,13 @@ export function Episodes() {
         <div className="episode-actions">
           <button
             className="episode-export"
-            onClick={() => alert(`Exporting verifiable bundle for "${activeProject?.title}" with OriginTrail DKG metadata…`)}
+            onClick={() =>
+              showToast({
+                type: "info",
+                title: "Verifiable Series Bundle",
+                message: `Exporting verifiable bundle for "${activeProject?.title ?? "Series"}" with OriginTrail DKG metadata…`,
+              })
+            }
           >
             Export Series Bundle <span>↓</span>
           </button>
@@ -2990,6 +3107,7 @@ export function Episodes() {
 export function Registry() {
   const { activeProject, projects, setActiveProject } = useProject();
   const navigate = useNavigate();
+  const { showToast } = useToast();
   const [scopeProjectId, setScopeProjectId] = useState<string>(activeProject?.id ?? "all");
   const [registryAssets, setRegistryAssets] = useState<
     Array<{
@@ -3053,7 +3171,7 @@ export function Registry() {
             const pr = projectList.find((p) => p.id === pId);
             list.push({
               name: c.name,
-              subtitle: c.epithet,
+              subtitle: `${c.epithet} · ${c.voiceProfile?.timbreDescription || "voice-dna"}`,
               type: "Character KA",
               category: "characters",
               ual: c.ual ?? `did:dkg:continuum/character/${c.id}`,
@@ -3096,10 +3214,10 @@ export function Registry() {
             list.push({
               name: l.name,
               subtitle: `${l.bpm} BPM · Key of ${l.key} · ${l.mood}`,
-              type: "Leitmotif KA",
+              type: "Sound / Leitmotif KA",
               category: "sounds",
               ual: l.ual ?? `did:dkg:continuum/leitmotif/${l.id}`,
-              schema: "schema:MusicComposition, ex:Leitmotif",
+              schema: "schema:MusicComposition, ex:SonicLeitmotif",
               id: l.id,
               projectId: pId,
               projectTitle: pr?.title ?? "Cyberpunk: Ronin Echoes",
@@ -3142,7 +3260,7 @@ export function Registry() {
               type: "Rendered Scene KA",
               category: "scenes",
               ual: sc.ual ?? `did:dkg:continuum/scene/${sc.id}`,
-              schema: "schema:VideoObject, prov:Entity",
+              schema: "schema:Clip, ex:ContinuityScene, prov:Entity",
               id: sc.id,
               projectId: pId,
               projectTitle: pr?.title ?? "Cyberpunk: Ronin Echoes",
@@ -3176,10 +3294,18 @@ export function Registry() {
         const json = await res.json();
         setActiveJson({ name: item.name, ual: item.ual, json, schema: item.schema });
       } else {
-        alert("Knowledge Asset JSON-LD snapshot not found on local storage.");
+        showToast({
+          type: "error",
+          title: "DKG Snapshot Error",
+          message: "Knowledge Asset JSON-LD snapshot not found on local storage.",
+        });
       }
     } catch (e) {
-      alert(`Error fetching JSON-LD: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "JSON-LD Fetch Error",
+        message: (e as Error).message,
+      });
     }
   };
 
@@ -3967,6 +4093,9 @@ export function Props() {
   const [isMinting, setIsMinting] = useState(false);
   const [mintStatus, setMintStatus] = useState<string | null>(null);
   const [mintError, setMintError] = useState<string | null>(null);
+  const { showToast } = useToast();
+  const [generatingPropImageId, setGeneratingPropImageId] = useState<string | null>(null);
+  const [autoGenerateImage, setAutoGenerateImage] = useState(true);
 
   // Sync targetProjectId when activeProject changes
   useEffect(() => {
@@ -4011,6 +4140,37 @@ export function Props() {
     navigator.clipboard.writeText(ual);
     setCopiedUal(ual);
     setTimeout(() => setCopiedUal(null), 2200);
+  };
+
+  // Generate AI Concept render for prop with Livepeer Flux
+  const handleGeneratePropImage = async (propId: string) => {
+    setGeneratingPropImageId(propId);
+    try {
+      const res = await fetch(`/api/vault/props/${propId}/image`, { method: "POST" });
+      if (res.ok) {
+        await fetchProps();
+        showToast({
+          type: "success",
+          title: "AI Concept Art Rendered",
+          message: "Prop visual keyframe rendered via Livepeer Agent (Flux) & anchored to DKG!",
+        });
+      } else {
+        const err = await res.json().catch(() => ({}));
+        showToast({
+          type: "error",
+          title: "Render Error",
+          message: err.error ?? "Failed to render prop image",
+        });
+      }
+    } catch (e) {
+      showToast({
+        type: "error",
+        title: "Connection Error",
+        message: (e as Error).message,
+      });
+    } finally {
+      setGeneratingPropImageId(null);
+    }
   };
 
   // Quick Preset Helper for director convenience
@@ -4081,6 +4241,7 @@ export function Props() {
         loreSignificance: loreSignificance.trim(),
         negativePrompts: negativePrompts.trim(),
         visualTheme,
+        generateImage: autoGenerateImage,
       };
 
       const res = await fetch("/api/vault/props", {
@@ -4096,6 +4257,12 @@ export function Props() {
 
       const mintedProp: PropAsset = await res.json();
       setMintStatus(`✓ Knowledge Asset Minted! UAL: ${mintedProp.ual}`);
+      showToast({
+        type: "success",
+        title: "Canon Prop Minted to DKG",
+        message: `Item "${mintedProp.name}" anchored to OriginTrail DKG!`,
+        ual: mintedProp.ual,
+      });
 
       // Refresh list
       await fetchProps();
@@ -4111,6 +4278,11 @@ export function Props() {
       }, 1400);
     } catch (err) {
       setMintError((err as Error).message);
+      showToast({
+        type: "error",
+        title: "Minting Error",
+        message: (err as Error).message,
+      });
       setIsMinting(false);
       setMintStatus(null);
     }
@@ -4280,7 +4452,18 @@ export function Props() {
             return (
               <article className="lore-card" key={prop.id}>
                 {/* Visual object rendering with motif CSS */}
-                <div className={`lore-object ${motifClass}`}></div>
+                <div
+                  className={`lore-object ${motifClass} ${prop.imageUrl ? "has-image" : ""}`}
+                  style={{ position: "relative", overflow: "hidden" }}
+                >
+                  {prop.imageUrl && (
+                    <img
+                      src={prop.imageUrl}
+                      alt={prop.name}
+                      style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }}
+                    />
+                  )}
+                </div>
 
                 <div className="prop-badge-row">
                   <span className={`prop-badge ${prop.category === "lore" ? "lore" : ""}`}>
@@ -4320,6 +4503,40 @@ export function Props() {
                     "{prop.loreSignificance}"
                   </div>
                 )}
+
+                {/* AI Concept Re-render button */}
+                <button
+                  type="button"
+                  className="outline-button"
+                  style={{
+                    width: "100%",
+                    marginTop: "10px",
+                    marginBottom: "8px",
+                    fontSize: "11px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: "6px",
+                    padding: "7px 10px",
+                    borderColor: "#7657d8",
+                    color: "#7657d8",
+                    borderRadius: "6px",
+                    cursor: "pointer",
+                    background: "transparent",
+                  }}
+                  disabled={generatingPropImageId === prop.id}
+                  onClick={() => handleGeneratePropImage(prop.id)}
+                >
+                  {generatingPropImageId === prop.id ? (
+                    <>
+                      <span className="mini-spinner" /> Generating with Livepeer (Flux)...
+                    </>
+                  ) : (
+                    <>
+                      ✦ {prop.imageUrl ? "Re-render AI Concept (Flux)" : "Generate AI Concept (Flux)"}
+                    </>
+                  )}
+                </button>
 
                 {/* Card footer: UAL badge and Direct button */}
                 <div className="prop-card-actions">
@@ -4635,6 +4852,18 @@ export function Props() {
                 </div>
               )}
 
+              {/* Auto-render Option */}
+              <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", margin: "14px 0 10px", fontSize: "11px", color: "#373644", fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={autoGenerateImage}
+                  onChange={(e) => setAutoGenerateImage(e.target.checked)}
+                  style={{ accentColor: "#7657d8", width: "16px", height: "16px", margin: 0 }}
+                  disabled={isMinting}
+                />
+                Auto-render cinematic concept art via Livepeer Agent (Flux) on mint
+              </label>
+
               {/* Submit Footer */}
               <div style={{ marginTop: "10px" }}>
                 <button
@@ -4679,6 +4908,7 @@ export function Props() {
 
 export function Settings() {
   const { activeProject, projects, setActiveProject } = useProject();
+  const { showToast } = useToast();
   const [model, setModel] = useState("Kling 1.6");
   const [health, setHealth] = useState<{
     status: string;
@@ -4716,9 +4946,8 @@ export function Settings() {
 
   useEffect(() => {
     if (!activeProject?.id) return;
+    const pId = activeProject.id;
     Promise.all([
-      fetch(`/api/vault/characters?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
-      fetch(`/api/vault/sets?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
       fetch(`/api/vault/sounds?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
       fetch(`/api/vault/props`).then((r) => r.json()),
       fetch(`/api/scenes?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
@@ -4745,8 +4974,17 @@ export function Settings() {
       const elapsed = Math.round(performance.now() - t0);
       setPingMs(elapsed);
       setHealth(data);
+      showToast({
+        type: "success",
+        title: "Livepeer Gateway Check Passed",
+        message: `Status: ONLINE (${data?.livepeerMode?.toUpperCase() ?? "REAL"} mode) · Latency: ${elapsed}ms`,
+      });
     } catch (e) {
-      alert(`Connection failed: ${(e as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Gateway Connection Error",
+        message: (e as Error).message,
+      });
     } finally {
       setTesting(false);
     }
@@ -4766,8 +5004,17 @@ export function Settings() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      showToast({
+        type: "success",
+        title: "Story Bible Exported",
+        message: `Downloaded canonical story bible bundle for "${activeProject.title}".`,
+      });
     } catch (err) {
-      alert(`Error exporting story bible: ${(err as Error).message}`);
+      showToast({
+        type: "error",
+        title: "Story Bible Export Failed",
+        message: (err as Error).message,
+      });
     }
   };
 

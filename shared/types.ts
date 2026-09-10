@@ -73,6 +73,7 @@ export interface PropAsset {
   visualTheme: "blade" | "transmitter" | "cell" | "device" | "relic" | "holocron";
   createdAt: string;
   ual?: string;                 // did:dkg:continuum/prop/...
+  imageUrl?: string;            // generated Livepeer concept art / render URL
 }
 
 // ── Project & Series Types ──

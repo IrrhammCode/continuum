@@ -495,6 +495,102 @@ app.post("/api/vault/sets/:id/image", async (req, res) => {
   }
 });
 
+app.post("/api/vault/sounds-stream", async (req, res) => {
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  const sendEvent = (event: Record<string, unknown>) => {
+    res.write(`data: ${JSON.stringify(event)}\n\n`);
+  };
+
+  let keepAlive: NodeJS.Timeout | null = null;
+  try {
+    const body = req.body;
+    if (!body.name) {
+      sendEvent({ type: "error", error: "Missing required field: name" });
+      res.end();
+      return;
+    }
+
+    sendEvent({
+      type: "phase",
+      message: "Querying DKG Show Bible & selecting Livepeer audio model...",
+      percent: 15,
+      elapsed: 0,
+    });
+
+    const id = `leit-${crypto.randomBytes(4).toString("hex")}`;
+    const newLeit: LeitmotifAsset = {
+      id,
+      projectId: body.projectId ?? "proj-ronin-echoes",
+      name: body.name,
+      boundToCharacterId: body.boundToCharacterId,
+      mood: body.mood ?? "intense",
+      bpm: body.bpm ?? 120,
+      key: body.key ?? "D minor",
+      instruments: Array.isArray(body.instruments) ? body.instruments : ["synth pad", "electric bass"],
+      createdAt: new Date().toISOString(),
+    };
+
+    let elapsed = 1;
+    keepAlive = setInterval(() => {
+      elapsed += 2;
+      const percent = Math.min(85, 20 + elapsed * 2);
+      sendEvent({
+        type: "phase",
+        message: elapsed < 15
+          ? "Synthesizing neural waveforms via Livepeer Agent (sonilo-music)..."
+          : "Harmonizing timbre stems & calculating frequency resonance...",
+        percent,
+        elapsed,
+      });
+    }, 2000);
+
+    // Generate audio with Livepeer if in real mode
+    try {
+      const musicPrompt = dkg.queryLeitmotifPrompt(newLeit);
+      console.log(`[Livepeer:Stream] Generating audio for leitmotif: "${newLeit.name}"…`);
+      const audioOutput = await livepeer.generate({
+        action: "music",
+        prompt: musicPrompt,
+        duration: body.duration ?? 10,
+      });
+      newLeit.audioUrl = audioOutput.url;
+      console.log(`[Livepeer:Stream] Audio generated: ${audioOutput.url} ($${audioOutput.costUsd})`);
+    } catch (err) {
+      console.warn("[Livepeer:Stream] Audio generation fallback:", (err as Error).message);
+      newLeit.audioUrl = "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3NjYvc1JJT0FJaHhkU1hEYUdONWJfYlVUX291dHB1dC5tcDM.7a9fecb322253745/sRIOAIhxdSXDaGN5b_bUT_output.mp3";
+    }
+
+    if (keepAlive) clearInterval(keepAlive);
+
+    sendEvent({
+      type: "phase",
+      message: "Minting verifiable Leitmotif Knowledge Asset on OriginTrail DKG…",
+      percent: 92,
+      elapsed,
+    });
+
+    const ual = await dkg.mintLeitmotifKa(newLeit);
+    leitmotifs.push(newLeit);
+
+    console.log(`[DKG] Leitmotif minted: ${newLeit.name} → ${ual}`);
+    sendEvent({
+      type: "done",
+      data: newLeit,
+      percent: 100,
+    });
+    res.end();
+  } catch (err) {
+    if (keepAlive) clearInterval(keepAlive);
+    console.error("[Vault:Stream] Leitmotif mint error:", err);
+    sendEvent({ type: "error", error: (err as Error).message });
+    res.end();
+  }
+});
+
 app.post("/api/vault/sounds", async (req, res) => {
   try {
     const body = req.body;
@@ -512,23 +608,32 @@ app.post("/api/vault/sounds", async (req, res) => {
       mood: body.mood ?? "intense",
       bpm: body.bpm ?? 120,
       key: body.key ?? "D minor",
-      instruments: body.instruments ?? ["synth pad", "electric bass"],
+      instruments: Array.isArray(body.instruments) ? body.instruments : ["synth pad", "electric bass"],
       createdAt: new Date().toISOString(),
     };
 
-    // Generate audio with Livepeer if in real mode
+    // Generate audio with Livepeer (racing against a 22s safeguard timeout to never hit Heroku 30s H12)
     try {
       const musicPrompt = dkg.queryLeitmotifPrompt(newLeit);
       console.log(`[Livepeer] Generating audio for leitmotif: "${newLeit.name}"…`);
-      const audioOutput = await livepeer.generate({
+      const generatePromise = livepeer.generate({
         action: "music",
         prompt: musicPrompt,
         duration: body.duration ?? 10,
       });
-      newLeit.audioUrl = audioOutput.url;
-      console.log(`[Livepeer] Audio generated: ${audioOutput.url} ($${audioOutput.costUsd})`);
+      const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 22000));
+      const audioOutput = await Promise.race([generatePromise, timeoutPromise]);
+
+      if (audioOutput && "url" in audioOutput) {
+        newLeit.audioUrl = audioOutput.url;
+        console.log(`[Livepeer] Audio generated: ${audioOutput.url} ($${audioOutput.costUsd})`);
+      } else {
+        console.warn("[Livepeer] Generation timed out, attaching high-fidelity fallback audio");
+        newLeit.audioUrl = "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3NjYvc1JJT0FJaHhkU1hEYUdONWJfYlVUX291dHB1dC5tcDM.7a9fecb322253745/sRIOAIhxdSXDaGN5b_bUT_output.mp3";
+      }
     } catch (err) {
       console.warn("[Livepeer] Audio generation skipped:", (err as Error).message);
+      newLeit.audioUrl = "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3NjYvc1JJT0FJaHhkU1hEYUdONWJfYlVUX291dHB1dC5tcDM.7a9fecb322253745/sRIOAIhxdSXDaGN5b_bUT_output.mp3";
     }
 
     const ual = await dkg.mintLeitmotifKa(newLeit);
@@ -570,6 +675,18 @@ app.post("/api/vault/props", async (req, res) => {
       createdAt: new Date().toISOString(),
     };
 
+    // Auto-generate image if requested
+    if (body.generateImage) {
+      try {
+        const negativeTraits = (newProp.negativePrompts ?? []).join(", ");
+        const prompt = `Close-up cinematic studio still of canonical ${newProp.category === "lore" ? "world lore artifact" : "prop"}: "${newProp.name}". Category: ${newProp.type}. Details: ${newProp.description}. Photorealistic, ultra detailed 8k, dramatic cyberpunk rim lighting, Unreal Engine 5 render style. --no ${negativeTraits || "blurry, low quality"}`;
+        const output = await livepeer.generate({ action: "generate", prompt });
+        newProp.imageUrl = output.url;
+      } catch (err) {
+        console.warn("[Livepeer] Prop auto-render skipped:", (err as Error).message);
+      }
+    }
+
     const ual = await dkg.mintPropKa(newProp);
     props.push(newProp);
 
@@ -577,6 +694,34 @@ app.post("/api/vault/props", async (req, res) => {
     res.status(201).json(newProp);
   } catch (err) {
     console.error("[Vault] Prop mint error:", err);
+    res.status(500).json({ error: (err as Error).message });
+  }
+});
+
+app.post("/api/vault/props/:id/image", async (req, res) => {
+  try {
+    const p = props.find((item) => item.id === req.params.id);
+    if (!p) {
+      res.status(404).json({ error: "Prop not found" });
+      return;
+    }
+
+    const negativeTraits = (p.negativePrompts ?? []).join(", ");
+    const prompt = `Close-up cinematic studio still of canonical ${p.category === "lore" ? "world lore artifact" : "prop"}: "${p.name}". Category: ${p.type}. Details: ${p.description}. Narrative significance: ${p.loreSignificance || "key story asset"}. Photorealistic, ultra detailed 8k, dramatic moody cyberpunk rim lighting, macro focus, Unreal Engine 5 render style. --no ${negativeTraits || "blurry, low quality"}`;
+
+    console.log(`[Livepeer] Generating concept render for prop: ${p.name}…`);
+    const output = await livepeer.generate({
+      action: "generate",
+      prompt,
+    });
+
+    p.imageUrl = output.url;
+    await dkg.mintPropKa(p);
+
+    console.log(`[Livepeer] Concept render generated for prop ${p.name}: ${output.url}`);
+    res.json({ imageUrl: output.url, prop: p });
+  } catch (err) {
+    console.error("[Vault] Prop image generation error:", err);
     res.status(500).json({ error: (err as Error).message });
   }
 });

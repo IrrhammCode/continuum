@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from "react-router";
 import { Icon } from "../components/StudioShell";
 import type { SceneResult, CharacterAsset, SetAsset, LeitmotifAsset, PropAsset } from "@shared/types";
 import { useProject } from "../context/ProjectContext";
+import { useToast } from "../components/HudToast";
 
 export function DirectorStudio() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { projects, activeProject, selectProjectId } = useProject();
+  const { projects, activeProject, selectProjectId, createProject } = useProject();
+  const { showToast } = useToast();
 
   // ── Vault state from live backend ──
   const [vaultChars, setVaultChars] = useState<CharacterAsset[]>([]);
@@ -27,6 +29,35 @@ export function DirectorStudio() {
   // Project scenes & history drawer state
   const [projectScenes, setProjectScenes] = useState<SceneResult[]>([]);
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+
+  // ── New Universe Project Modal State ──
+  const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [creatingProject, setCreatingProject] = useState(false);
+  const [autoGenerateAfterCreation, setAutoGenerateAfterCreation] = useState(true);
+
+  // Modal form states
+  const [newProjTitle, setNewProjTitle] = useState("");
+  const [newProjGenre, setNewProjGenre] = useState("Cyberpunk Noir");
+  const [newProjLogline, setNewProjLogline] = useState("");
+
+  const [newCharName, setNewCharName] = useState("");
+  const [newCharEpithet, setNewCharEpithet] = useState("");
+  const [newCharAttire, setNewCharAttire] = useState("");
+  const [newCharFeatures, setNewCharFeatures] = useState("");
+  const [newCharVoice, setNewCharVoice] = useState("");
+
+  const [newSetName, setNewSetName] = useState("");
+  const [newSetLighting, setNewSetLighting] = useState("");
+  const [newSetTimeOfDay, setNewSetTimeOfDay] = useState("NIGHT");
+
+  const [newSoundName, setNewSoundName] = useState("");
+  const [newSoundMood, setNewSoundMood] = useState("melancholic");
+  const [newSoundKey, setNewSoundKey] = useState("D minor");
+  const [newSoundBpm, setNewSoundBpm] = useState(120);
+
+  const [newPropName, setNewPropName] = useState("");
+  const [newPropCategory, setNewPropCategory] = useState<"prop" | "lore">("prop");
+  const [newPropDesc, setNewPropDesc] = useState("");
 
   // Prompt state
   const [prompt, setPrompt] = useState(
@@ -62,6 +93,185 @@ export function DirectorStudio() {
   };
 
   // ── Fetch vault data from backend ──
+  const reloadVault = async () => {
+    try {
+      const [chars, sets, sounds, props] = await Promise.all([
+        fetch("/api/vault/characters").then((r) => r.json()),
+        fetch("/api/vault/sets").then((r) => r.json()),
+        fetch("/api/vault/sounds").then((r) => r.json()),
+        fetch("/api/vault/props").then((r) => r.json()),
+      ]);
+      setVaultChars(chars ?? []);
+      setVaultSets(sets ?? []);
+      setVaultMotifs(sounds ?? []);
+      setVaultProps(props ?? []);
+      return { chars, sets, sounds, props };
+    } catch {
+      return null;
+    }
+  };
+
+  const applySampleUniversePreset = () => {
+    setNewProjTitle("Aethelgard: The Void Signal");
+    setNewProjGenre("Cosmic Sci-Fi Noir");
+    setNewProjLogline("An isolated station archivist intercepts transmissions from a dead planetary core.");
+
+    setNewCharName("Dr. Sarah Chen");
+    setNewCharEpithet("Chief Void Archaeologist");
+    setNewCharAttire("Tactical reinforced EVA flight suit with glowing copper telemetry seams");
+    setNewCharFeatures("Sub-dermal neural jack behind left ear, amber tinted corneal augment");
+    setNewCharVoice("Analytical, calm, resonant timbre");
+
+    setNewSetName("Observatory Dome 07");
+    setNewSetLighting("Starlight filtering through frosted quartz geodesic dome with pulsing emerald consoles");
+    setNewSetTimeOfDay("DEEP VOID");
+
+    setNewSoundName("Sarah's Frequency — Pulsar Echo");
+    setNewSoundMood("ambient dread and wonder");
+    setNewSoundKey("C minor");
+    setNewSoundBpm(90);
+
+    setNewPropName("Resonance Prism Scanner");
+    setNewPropCategory("prop");
+    setNewPropDesc("Handheld titanium spectrometer that decodes encrypted subspace harmonics.");
+  };
+
+  const handleCreateFullUniverse = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProjTitle.trim() || !newCharName.trim() || !newSetName.trim()) {
+      alert("Please provide at least a Project Title, Character Name, and Location Name.");
+      return;
+    }
+
+    setCreatingProject(true);
+    try {
+      const proj = await createProject({
+        title: newProjTitle.trim(),
+        genre: newProjGenre.trim() || "Cinematic Sci-Fi",
+        logline: newProjLogline.trim() || "A new cinematic narrative universe.",
+        seasonNumber: 1,
+        totalEpisodes: 3,
+      });
+
+      const charRes = await fetch("/api/vault/characters", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: proj.id,
+          name: newCharName.trim(),
+          epithet: newCharEpithet.trim() || "Canon Protagonist",
+          canonicalAttire: newCharAttire.trim() || "Signature tactical attire",
+          distinguishingFeatures: newCharFeatures.trim() ? [newCharFeatures.trim()] : ["Visual DNA locked"],
+          voiceTimbre: newCharVoice.trim() || "Calm, deep timbre",
+          negativePrompts: ["no blond hair", "no casual clothing", "no daylight", "no cartoon style"],
+        }),
+      });
+      const createdChar: CharacterAsset = await charRes.json();
+
+      const setRes = await fetch("/api/vault/sets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: proj.id,
+          name: newSetName.trim(),
+          lightingSchema: newSetLighting.trim() || "Volumetric atmospheric lighting",
+          timeOfDay: newSetTimeOfDay,
+          negativePrompts: ["no daylight", "no bright sunny sky"],
+        }),
+      });
+      const createdSet: SetAsset = await setRes.json();
+
+      const soundRes = await fetch("/api/vault/sounds", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          projectId: proj.id,
+          name: newSoundName.trim() || `${newCharName.trim()}'s Leitmotif`,
+          mood: newSoundMood,
+          bpm: Number(newSoundBpm) || 120,
+          key: newSoundKey || "D minor",
+          instruments: ["synth pad", "sub bass", "orchestral strings"],
+        }),
+      });
+      const createdSound: LeitmotifAsset = await soundRes.json();
+
+      let createdProp: PropAsset | null = null;
+      if (newPropName.trim()) {
+        const propRes = await fetch("/api/vault/props", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectId: proj.id,
+            name: newPropName.trim(),
+            category: newPropCategory,
+            type: newPropCategory === "lore" ? "World Lore Object" : "Equipment Weapon",
+            description: newPropDesc.trim() || "Canonical artifact",
+            boundToCharacterId: createdChar.id,
+            boundToSetId: createdSet.id,
+          }),
+        });
+        createdProp = await propRes.json();
+      }
+
+      const updated = await reloadVault();
+      if (updated) {
+        setSelectedCharIds([createdChar.id]);
+        setSelectedSetId(createdSet.id);
+        setSelectedMotifIds([createdSound.id]);
+        if (createdProp) {
+          setSelectedPropIds([createdProp.id]);
+        }
+      }
+
+      const generatedPrompt = createdProp
+        ? `${createdChar.name} enters ${createdSet.name}, carrying the ${createdProp.name}. Atmospheric lighting reflects across the environment as a long-awaited transmission breaks the silence.`
+        : `${createdChar.name} steps cautiously into ${createdSet.name}. The ambient atmosphere thickens as dramatic tension mounts.`;
+      setPrompt(generatedPrompt);
+
+      showToast({
+        type: "success",
+        title: "Universe & Canon Created",
+        message: `${proj.title} is now active with ${createdChar.name} and ${createdSet.name}.`,
+        ual: proj.ual,
+      });
+
+      setIsNewProjectModalOpen(false);
+
+      if (autoGenerateAfterCreation) {
+        setTimeout(() => {
+          handleDirectScene();
+        }, 500);
+      } else {
+        scrollToStep(5);
+      }
+    } catch (err) {
+      console.error("Error creating universe:", err);
+      alert("Failed to create universe: " + (err as Error).message);
+    } finally {
+      setCreatingProject(false);
+    }
+  };
+
+  useEffect(() => {
+    reloadVault().then((data) => {
+      if (!data) return;
+      const { chars, sets, sounds, props } = data;
+      if (chars?.length > 0 && selectedCharIds.length === 0) {
+        setSelectedCharIds([chars[0].id]);
+      }
+      if (sets?.length > 0 && !selectedSetId) {
+        setSelectedSetId(sets[0].id);
+      }
+      if (sounds?.length > 0 && selectedMotifIds.length === 0) {
+        setSelectedMotifIds([sounds[0].id]);
+      }
+      if (props?.length > 0 && selectedPropIds.length === 0) {
+        setSelectedPropIds([props[0].id]);
+      }
+    });
+  }, []);
+
+  // Previous simple fetch
   useEffect(() => {
     Promise.all([
       fetch("/api/vault/characters").then((r) => r.json()),
@@ -489,6 +699,14 @@ export function DirectorStudio() {
           </div>
 
           <div style={{ display: "flex", gap: "8px", alignItems: "center", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              className="mint-button"
+              onClick={() => setIsNewProjectModalOpen(true)}
+              style={{ fontSize: "12px", padding: "7px 16px", background: "#7657d8", color: "#fff", display: "inline-flex", alignItems: "center", gap: "6px" }}
+            >
+              <span>+ New Universe Project</span>
+            </button>
             <button type="button" className="outline-button" onClick={() => setIsHistoryOpen(true)}>
               Project Archive ({projectScenes.length})
             </button>
@@ -1609,6 +1827,296 @@ export function DirectorStudio() {
           </aside>
         </>
       )}
+      {/* ── NEW UNIVERSE & CANON ASSET CREATOR MODAL ── */}
+      {isNewProjectModalOpen && (
+        <div className="modal-overlay" onClick={() => setIsNewProjectModalOpen(false)}>
+          <div
+            className="modal-card"
+            style={{ maxWidth: "680px", width: "min(680px, calc(100vw - 32px))" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <header className="modal-header">
+              <div>
+                <p style={{ margin: "0 0 4px", fontSize: "10px", fontFamily: "DM Mono", color: "#7657d8", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                  ORIGINTRAIL DKG CANON CREATOR
+                </p>
+                <h3 style={{ margin: 0, fontSize: "20px" }}>Create New Universe & Canon Pipeline</h3>
+                <p style={{ margin: "4px 0 0", fontSize: "12px", color: "#6b687a", lineHeight: 1.4 }}>
+                  Establish the story bible, character visual DNA, staging environment, leitmotif, and prop in one unified workflow.
+                </p>
+              </div>
+              <button
+                type="button"
+                className="modal-close"
+                onClick={() => setIsNewProjectModalOpen(false)}
+                style={{ cursor: "pointer" }}
+              >
+                ×
+              </button>
+            </header>
+
+            <form onSubmit={handleCreateFullUniverse}>
+              <div className="modal-body" style={{ maxHeight: "70vh", overflowY: "auto", padding: "18px 24px", display: "flex", flexDirection: "column", gap: "18px" }}>
+                
+                {/* Preset Banner */}
+                <div style={{ background: "#f5f3ff", border: "1px dashed #a78bfa", borderRadius: "10px", padding: "10px 14px", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "8px" }}>
+                  <span style={{ fontSize: "11px", color: "#5b21b6", fontWeight: 600 }}>
+                    Want a pre-configured template? Auto-fill a complete Cosmic Sci-Fi universe:
+                  </span>
+                  <button
+                    type="button"
+                    onClick={applySampleUniversePreset}
+                    style={{ background: "#7657d8", color: "#fff", border: 0, borderRadius: "6px", padding: "5px 12px", fontSize: "11px", fontWeight: 700, cursor: "pointer" }}
+                  >
+                    Auto-Fill Preset
+                  </button>
+                </div>
+
+                {/* 1. Universe Basics */}
+                <fieldset style={{ border: "1px solid #e2e0e8", borderRadius: "10px", padding: "14px", margin: 0 }}>
+                  <legend style={{ fontSize: "11px", fontWeight: 800, color: "#181725", padding: "0 6px", textTransform: "uppercase", fontFamily: "DM Mono" }}>
+                    1. Universe & Story Scope
+                  </legend>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                    <div className="modal-field">
+                      <label>PROJECT TITLE *</label>
+                      <input
+                        type="text"
+                        value={newProjTitle}
+                        onChange={(e) => setNewProjTitle(e.target.value)}
+                        placeholder="e.g. Aethelgard: The Void Signal"
+                        required
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>GENRE / THEME</label>
+                      <input
+                        type="text"
+                        value={newProjGenre}
+                        onChange={(e) => setNewProjGenre(e.target.value)}
+                        placeholder="e.g. Cosmic Sci-Fi Noir"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-field">
+                    <label>SERIES LOGLINE</label>
+                    <input
+                      type="text"
+                      value={newProjLogline}
+                      onChange={(e) => setNewProjLogline(e.target.value)}
+                      placeholder="e.g. An isolated station archivist intercepts transmissions from a dead planetary core."
+                    />
+                  </div>
+                </fieldset>
+
+                {/* 2. Character & Visual DNA */}
+                <fieldset style={{ border: "1px solid #e2e0e8", borderRadius: "10px", padding: "14px", margin: 0 }}>
+                  <legend style={{ fontSize: "11px", fontWeight: 800, color: "#181725", padding: "0 6px", textTransform: "uppercase", fontFamily: "DM Mono" }}>
+                    2. Lead Character & Visual DNA
+                  </legend>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                    <div className="modal-field">
+                      <label>CHARACTER NAME *</label>
+                      <input
+                        type="text"
+                        value={newCharName}
+                        onChange={(e) => setNewCharName(e.target.value)}
+                        placeholder="e.g. Dr. Sarah Chen"
+                        required
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>EPITHET / ALIAS</label>
+                      <input
+                        type="text"
+                        value={newCharEpithet}
+                        onChange={(e) => setNewCharEpithet(e.target.value)}
+                        placeholder="e.g. Chief Void Archaeologist"
+                      />
+                    </div>
+                  </div>
+                  <div className="modal-field" style={{ marginBottom: "10px" }}>
+                    <label>CANONICAL ATTIRE (DNA LOCKED)</label>
+                    <input
+                      type="text"
+                      value={newCharAttire}
+                      onChange={(e) => setNewCharAttire(e.target.value)}
+                      placeholder="e.g. Tactical reinforced EVA flight suit with glowing copper telemetry seams"
+                    />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                    <div className="modal-field">
+                      <label>DISTINGUISHING FEATURES</label>
+                      <input
+                        type="text"
+                        value={newCharFeatures}
+                        onChange={(e) => setNewCharFeatures(e.target.value)}
+                        placeholder="e.g. Sub-dermal neural jack behind left ear"
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>VOICE TIMBRE</label>
+                      <input
+                        type="text"
+                        value={newCharVoice}
+                        onChange={(e) => setNewCharVoice(e.target.value)}
+                        placeholder="e.g. Analytical, calm, resonant timbre"
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* 3. Environment & Staging */}
+                <fieldset style={{ border: "1px solid #e2e0e8", borderRadius: "10px", padding: "14px", margin: 0 }}>
+                  <legend style={{ fontSize: "11px", fontWeight: 800, color: "#181725", padding: "0 6px", textTransform: "uppercase", fontFamily: "DM Mono" }}>
+                    3. Staging Environment / Set
+                  </legend>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                    <div className="modal-field">
+                      <label>LOCATION NAME *</label>
+                      <input
+                        type="text"
+                        value={newSetName}
+                        onChange={(e) => setNewSetName(e.target.value)}
+                        placeholder="e.g. Observatory Dome 07"
+                        required
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>TIME OF DAY</label>
+                      <select
+                        value={newSetTimeOfDay}
+                        onChange={(e) => setNewSetTimeOfDay(e.target.value)}
+                      >
+                        <option value="NIGHT">NIGHT</option>
+                        <option value="DEEP VOID">DEEP VOID</option>
+                        <option value="TWILIGHT">TWILIGHT</option>
+                        <option value="GOLDEN HOUR">GOLDEN HOUR</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="modal-field">
+                    <label>LIGHTING SCHEMA & ATMOSPHERE</label>
+                    <input
+                      type="text"
+                      value={newSetLighting}
+                      onChange={(e) => setNewSetLighting(e.target.value)}
+                      placeholder="e.g. Starlight filtering through frosted quartz dome with pulsing emerald consoles"
+                    />
+                  </div>
+                </fieldset>
+
+                {/* 4. Sound Leitmotif */}
+                <fieldset style={{ border: "1px solid #e2e0e8", borderRadius: "10px", padding: "14px", margin: 0 }}>
+                  <legend style={{ fontSize: "11px", fontWeight: 800, color: "#181725", padding: "0 6px", textTransform: "uppercase", fontFamily: "DM Mono" }}>
+                    4. Sound Leitmotif & Score
+                  </legend>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1fr", gap: "10px" }}>
+                    <div className="modal-field">
+                      <label>TRACK NAME</label>
+                      <input
+                        type="text"
+                        value={newSoundName}
+                        onChange={(e) => setNewSoundName(e.target.value)}
+                        placeholder="e.g. Sarah's Frequency — Pulsar Echo"
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>MUSICAL KEY</label>
+                      <input
+                        type="text"
+                        value={newSoundKey}
+                        onChange={(e) => setNewSoundKey(e.target.value)}
+                        placeholder="e.g. C minor"
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>TEMPO (BPM)</label>
+                      <input
+                        type="number"
+                        value={newSoundBpm}
+                        onChange={(e) => setNewSoundBpm(Number(e.target.value))}
+                        placeholder="90"
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                {/* 5. Canon Prop & Gear */}
+                <fieldset style={{ border: "1px solid #e2e0e8", borderRadius: "10px", padding: "14px", margin: 0 }}>
+                  <legend style={{ fontSize: "11px", fontWeight: 800, color: "#181725", padding: "0 6px", textTransform: "uppercase", fontFamily: "DM Mono" }}>
+                    5. Canonical Prop & Lore Artifact
+                  </legend>
+                  <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                    <div className="modal-field">
+                      <label>PROP / GEAR NAME</label>
+                      <input
+                        type="text"
+                        value={newPropName}
+                        onChange={(e) => setNewPropName(e.target.value)}
+                        placeholder="e.g. Resonance Prism Scanner"
+                      />
+                    </div>
+                    <div className="modal-field">
+                      <label>CATEGORY</label>
+                      <select
+                        value={newPropCategory}
+                        onChange={(e) => setNewPropCategory(e.target.value as "prop" | "lore")}
+                      >
+                        <option value="prop">Physical Equipment</option>
+                        <option value="lore">Canon Lore Object</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="modal-field">
+                    <label>LORE DESCRIPTION</label>
+                    <input
+                      type="text"
+                      value={newPropDesc}
+                      onChange={(e) => setNewPropDesc(e.target.value)}
+                      placeholder="e.g. Handheld titanium spectrometer that decodes encrypted subspace harmonics."
+                    />
+                  </div>
+                </fieldset>
+
+                {/* Auto-generate video toggle */}
+                <div style={{ background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: "8px", padding: "10px 14px", display: "flex", alignItems: "center", gap: "10px" }}>
+                  <input
+                    type="checkbox"
+                    id="auto-generate-check"
+                    checked={autoGenerateAfterCreation}
+                    onChange={(e) => setAutoGenerateAfterCreation(e.target.checked)}
+                    style={{ width: "16px", height: "16px", cursor: "pointer" }}
+                  />
+                  <label htmlFor="auto-generate-check" style={{ fontSize: "12px", fontWeight: 600, color: "#166534", cursor: "pointer", margin: 0 }}>
+                    Immediately synthesize video scene take upon creation
+                  </label>
+                </div>
+              </div>
+
+              <footer className="modal-footer" style={{ padding: "16px 24px", display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+                <button
+                  type="button"
+                  className="outline-button"
+                  onClick={() => setIsNewProjectModalOpen(false)}
+                  disabled={creatingProject}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="mint-button"
+                  disabled={creatingProject}
+                  style={{ background: "#7657d8", color: "#fff", padding: "10px 20px" }}
+                >
+                  {creatingProject ? "Minting to DKG…" : "Create Universe & Mint to DKG →"}
+                </button>
+              </footer>
+            </form>
+          </div>
+        </div>
+      )}
+
     </section>
   );
 }

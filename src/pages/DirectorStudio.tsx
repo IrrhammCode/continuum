@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Icon } from "../components/StudioShell";
-import type { SceneResult, CharacterAsset, SetAsset, LeitmotifAsset } from "@shared/types";
+import type { SceneResult, CharacterAsset, SetAsset, LeitmotifAsset, PropAsset } from "@shared/types";
 import { useProject } from "../context/ProjectContext";
 
 export function DirectorStudio() {
@@ -13,11 +13,13 @@ export function DirectorStudio() {
   const [vaultChars, setVaultChars] = useState<CharacterAsset[]>([]);
   const [vaultSets, setVaultSets] = useState<SetAsset[]>([]);
   const [vaultMotifs, setVaultMotifs] = useState<LeitmotifAsset[]>([]);
+  const [vaultProps, setVaultProps] = useState<PropAsset[]>([]);
 
-  // Selected cast
+  // Selected cast, sets, motifs, props
   const [selectedCharIds, setSelectedCharIds] = useState<string[]>([]);
   const [selectedSetId, setSelectedSetId] = useState<string>("");
   const [selectedMotifIds, setSelectedMotifIds] = useState<string[]>([]);
+  const [selectedPropIds, setSelectedPropIds] = useState<string[]>([]);
 
   // Project scenes & history drawer state
   const [projectScenes, setProjectScenes] = useState<SceneResult[]>([]);
@@ -46,11 +48,13 @@ export function DirectorStudio() {
       fetch("/api/vault/characters").then((r) => r.json()),
       fetch("/api/vault/sets").then((r) => r.json()),
       fetch("/api/vault/sounds").then((r) => r.json()),
+      fetch("/api/vault/props").then((r) => r.json()),
     ])
-      .then(([chars, sets, sounds]) => {
+      .then(([chars, sets, sounds, props]) => {
         setVaultChars(chars ?? []);
         setVaultSets(sets ?? []);
         setVaultMotifs(sounds ?? []);
+        setVaultProps(props ?? []);
         // Default selections
         if (chars?.length > 0 && selectedCharIds.length === 0) {
           setSelectedCharIds([chars[0].id]);
@@ -61,9 +65,52 @@ export function DirectorStudio() {
         if (sounds?.length > 0 && selectedMotifIds.length === 0) {
           setSelectedMotifIds([sounds[0].id]);
         }
+        if (props?.length > 0 && selectedPropIds.length === 0) {
+          setSelectedPropIds([props[0].id]);
+        }
       })
       .catch(() => {});
   }, []);
+
+  const toggleProp = (id: string) => {
+    setSelectedPropIds((prev) =>
+      prev.includes(id) ? prev.filter((p) => p !== id) : [...prev, id]
+    );
+  };
+
+  const applyPreset = (key: "alley" | "skyline" | "derelict") => {
+    if (key === "alley") {
+      const ren = vaultChars.find((c) => c.name.includes("Ren"));
+      const set = vaultSets.find((s) => s.name.includes("Neo-Tokyo"));
+      const prop = vaultProps.find((p) => p.name.includes("Katana") || p.name.includes("Transmitter"));
+      const sound = vaultMotifs.find((m) => m.name.includes("Ren's Blade"));
+      if (ren) setSelectedCharIds([ren.id]);
+      if (set) setSelectedSetId(set.id);
+      if (prop) setSelectedPropIds([prop.id]);
+      if (sound) setSelectedMotifIds([sound.id]);
+      setPrompt("Ren draws his Kensai Katana under the neon-drenched rain in Neo-Tokyo. Droplets sizzle against the monomolecular edge as the alley echoes with distant sirens.");
+    } else if (key === "skyline") {
+      const yuki = vaultChars.find((c) => c.name.includes("Yuki"));
+      const set = vaultSets.find((s) => s.name.includes("Sky Garden"));
+      const prop = vaultProps.find((p) => p.name.includes("Memory Cartridge") || p.name.includes("Transmitter"));
+      const sound = vaultMotifs.find((m) => m.name.includes("Ghost Protocol"));
+      if (yuki) setSelectedCharIds([yuki.id]);
+      if (set) setSelectedSetId(set.id);
+      if (prop) setSelectedPropIds([prop.id]);
+      if (sound) setSelectedMotifIds([sound.id]);
+      setPrompt("Yuki hacks into the city mainframe atop The Floating Sky Garden, clutching Memory Cartridge / 09 as bioluminescent leaves ripple in the moonlit breeze.");
+    } else if (key === "derelict") {
+      const vance = vaultChars.find((c) => c.name.includes("Vance"));
+      const set = vaultSets.find((s) => s.name.includes("Derelict"));
+      const prop = vaultProps.find((p) => p.name.includes("Visor") || p.name.includes("Beacon"));
+      const sound = vaultMotifs.find((m) => m.name.includes("Distress Echo"));
+      if (vance) setSelectedCharIds([vance.id]);
+      if (set) setSelectedSetId(set.id);
+      if (prop) setSelectedPropIds([prop.id]);
+      if (sound) setSelectedMotifIds([sound.id]);
+      setPrompt("Dr. Vance adjusts his Aethelgard Telemetry Visor inside Derelict Station Alpha. Amber emergency beacons pulse through zero-gravity dust motes as a ghost signal repeats.");
+    }
+  };
 
   // ── Fetch project-scoped scenes when activeProject changes ──
   useEffect(() => {
@@ -191,11 +238,22 @@ export function DirectorStudio() {
       setElapsedSec((s) => s + 1);
     }, 1000);
 
+    let effectivePrompt = prompt.trim();
+    if (selectedPropIds.length > 0) {
+      const selectedPropNames = vaultProps
+        .filter((p) => selectedPropIds.includes(p.id))
+        .map((p) => p.name);
+      const unmentionedProps = selectedPropNames.filter((name) => !effectivePrompt.includes(name));
+      if (unmentionedProps.length > 0) {
+        effectivePrompt = `${effectivePrompt}\n\n[CANON PROPS: ${unmentionedProps.join(", ")}]`;
+      }
+    }
+
     const payload = {
       projectId: activeProject?.id ?? "proj-ronin-echoes",
       episodeNumber: 1,
       sceneNumber: (projectScenes.length || 0) + 1,
-      prompt: prompt.trim(),
+      prompt: effectivePrompt,
       cast: {
         characterIds: selectedCharIds,
         setId: selectedSetId,
@@ -376,16 +434,36 @@ export function DirectorStudio() {
             {vaultChars.map((c) => (
               <button
                 key={c.id}
+                type="button"
                 className={`person-chip ${selectedCharIds.includes(c.id) ? "selected" : ""}`}
                 onClick={() => toggleChar(c.id)}
                 title={`Click to toggle ${c.name}`}
                 style={{
                   borderColor: selectedCharIds.includes(c.id) ? "#7657d8" : "#d8d5dd",
                   background: selectedCharIds.includes(c.id) ? "#f4effc" : "#fbfaf8",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 10px 4px 6px",
                 }}
               >
-                <i className={`portrait ${c.name.includes("Yuki") ? "yuki" : "ren"}`}></i>
-                {c.name}
+                {c.avatarUrl ? (
+                  <img
+                    src={c.avatarUrl}
+                    alt={c.name}
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                    }}
+                  />
+                ) : (
+                  <i className={`portrait ${c.name.includes("Yuki") ? "yuki" : "ren"}`}></i>
+                )}
+                <span>{c.name}</span>
                 {selectedCharIds.includes(c.id) && <Icon name="check" size={13} />}
               </button>
             ))}
@@ -401,20 +479,80 @@ export function DirectorStudio() {
             {vaultSets.map((s) => (
               <button
                 key={s.id}
+                type="button"
                 className={`place-chip ${selectedSetId === s.id ? "selected" : ""}`}
                 onClick={() => setSelectedSetId(s.id)}
                 style={{
                   borderColor: selectedSetId === s.id ? "#1b9e91" : "#d8d5dd",
                   background: selectedSetId === s.id ? "#e8f8f5" : "#fbfaf8",
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: "6px",
+                  padding: "4px 10px 4px 6px",
                 }}
               >
-                <i></i>
-                {s.name}
+                {s.imageUrl ? (
+                  <img
+                    src={s.imageUrl}
+                    alt={s.name}
+                    style={{
+                      width: "22px",
+                      height: "22px",
+                      borderRadius: "4px",
+                      objectFit: "cover",
+                      flexShrink: 0,
+                      boxShadow: "0 1px 3px rgba(0,0,0,0.15)",
+                    }}
+                  />
+                ) : (
+                  <i></i>
+                )}
+                <span>{s.name}</span>
                 {selectedSetId === s.id && <Icon name="check" size={13} />}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Props & Gear Selection */}
+        {vaultProps.length > 0 && (
+          <div className="context-block props-block">
+            <label>
+              PROPS & GEAR <span>({selectedPropIds.length} SELECTED)</span>
+            </label>
+            <div className="chips">
+              {vaultProps.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  className={`person-chip prop-chip ${selectedPropIds.includes(p.id) ? "selected" : ""}`}
+                  onClick={() => toggleProp(p.id)}
+                  title={p.description}
+                  style={{
+                    borderColor: selectedPropIds.includes(p.id) ? "#d97706" : "#d8d5dd",
+                    background: selectedPropIds.includes(p.id) ? "#fffbeb" : "#fbfaf8",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: "6px",
+                    padding: "4px 10px 4px 6px",
+                  }}
+                >
+                  {p.imageUrl ? (
+                    <img
+                      src={p.imageUrl}
+                      alt={p.name}
+                      style={{ width: "20px", height: "20px", borderRadius: "4px", objectFit: "cover" }}
+                    />
+                  ) : (
+                    <Icon name="spark" size={12} />
+                  )}
+                  <span>{p.name}</span>
+                  {selectedPropIds.includes(p.id) && <Icon name="check" size={13} />}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Bound Sound Leitmotif */}
         <div className="motif" style={{ marginLeft: "auto" }}>
@@ -439,6 +577,22 @@ export function DirectorStudio() {
           </div>
           <button className="constraint" onClick={() => navigate("/vault")}>
             <Icon name="lock" size={13} /> 14 DKG constraints active
+          </button>
+        </div>
+
+        {/* Quick Presets */}
+        <div style={{ display: "flex", gap: "8px", flexWrap: "wrap", margin: "10px 0 12px", alignItems: "center" }}>
+          <span style={{ fontSize: "10px", fontWeight: 700, color: "#8a8894", letterSpacing: "0.5px" }}>
+            STORY PRESETS:
+          </span>
+          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("alley")}>
+            ⚡ Rain Alley Standoff
+          </button>
+          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("skyline")}>
+            ⚡ Skyline Data Breach
+          </button>
+          <button type="button" className="preset-chip-btn" onClick={() => applyPreset("derelict")}>
+            ⚡ Derelict Cryo Echo
           </button>
         </div>
 

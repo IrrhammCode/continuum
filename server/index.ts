@@ -65,6 +65,7 @@ const props: PropAsset[] = [
     loreSignificance: "Recovered by Yuki Tanabe after the 2088 blackout. Emits an encrypted handshake loop that matches Ren's old squad frequency.",
     negativePrompts: ["smartphone", "modern plastic", "clean glass", "touchscreen"],
     visualTheme: "transmitter",
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDEvc3ZZOHV1Tk10VUxSXzB4WHFNQUJRLmpwZw.26042ef301363d28/svY8uuNMtULR_0xXqMABQ.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/prop/17a9e01f",
   },
@@ -79,6 +80,7 @@ const props: PropAsset[] = [
     loreSignificance: "Inherited heirloom from Ren's decommissioned security unit. The blade capacitor is locked to his biometric palm signature.",
     negativePrompts: ["fantasy sword", "golden ornamental handle", "curved scimitar", "medieval guard"],
     visualTheme: "blade",
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3MWUvS3RWQUplcmdRRkUxcUFVOWdXTTdNLmpwZw.85e66edb7653a7de/KtVAJergQFE1qAU9gWM7M.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/prop/28b7f13c",
   },
@@ -92,6 +94,7 @@ const props: PropAsset[] = [
     loreSignificance: "The central evidence driving Season 01. Contains raw neuro-traces salvaged from the rain district mainframe.",
     negativePrompts: ["usb stick", "floppy disk", "plastic thumb drive", "metal screw"],
     visualTheme: "cell",
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/prop/39c6e48b",
   },
@@ -119,6 +122,7 @@ const props: PropAsset[] = [
     loreSignificance: "Worn by Dr. Vance during deep-space EVAs. Its local buffer is the only device that preserved the original transmission timestamp.",
     negativePrompts: ["sunglasses", "aviators", "steampunk goggles"],
     visualTheme: "device",
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQxMmIvRjZjTG5KZE43SkZLaFNTLXFCMkgxLmpwZw.47fdb1a8514009fd/F6cLnJdN7JFKhSS-qB2H1.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/prop/51e4b92a",
   },
@@ -132,6 +136,7 @@ const props: PropAsset[] = [
     loreSignificance: "The origin of the ghost distress signal. Telemetry indicates it has been broadcasting without fuel for forty orbital cycles.",
     negativePrompts: ["radio tower", "satellite dish on tripod"],
     visualTheme: "transmitter",
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDEvc3ZZOHV1Tk10VUxSXzB4WHFNQUJRLmpwZw.26042ef301363d28/svY8uuNMtULR_0xXqMABQ.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/prop/62f3c03b",
   },
@@ -208,6 +213,212 @@ try {
   }
 } catch (err) {
   console.warn("[Scenes] Failed loading disk scenes:", (err as Error).message);
+}
+
+// Ensure default canonical scenes exist if none loaded from disk
+if (scenes.length === 0) {
+  scenes.push(
+    {
+      id: "ronin-scene-01",
+      projectId: "proj-ronin-echoes",
+      ual: "did:dkg:continuum/scene/ronin-scene-01",
+      composedPrompt: "Character 'Ren' (Cyborg Ronin): weathered carbon-fiber prosthetic arm, glowing amber ocular implant, worn synth-leather duster. Setting: Neo-Tokyo Sector 7 Rain Alley. Action: Ren steps beneath the neon awning into the pouring acid rain, drawing his glowing blade. Cinematic framing, dramatic lighting.",
+      createdAt: "2026-03-09T18:30:00.000Z",
+      request: {
+        projectId: "proj-ronin-echoes",
+        episodeNumber: 1,
+        sceneNumber: 1,
+        prompt: "Ren steps beneath the neon awning into the pouring acid rain, drawing his glowing blade.",
+        cast: {
+          characterIds: ["char-ren-01"],
+          setId: "set-rain-alley-01",
+          leitmotifIds: ["motif-ren-blade-01"],
+        },
+      },
+      dkgConstraints: {
+        characterTraitsInjected: {
+          Ren: [
+            "weathered carbon-fiber prosthetic right arm with exposed brass servos",
+            "glowing amber ocular implant with retinal telemetry display",
+            "worn synth-leather duster with faded kanji stencil on collar",
+          ],
+        },
+        negativePromptsInjected: ["generic anime", "clean chrome", "plastic textures", "bright sunshine"],
+        leitmotifsBound: ["motif-ren-blade-01"],
+        setConstraintsApplied: [
+          "perpetual heavy downpour with visible raindrop streaks",
+          "neon reflections on wet asphalt in cyan, magenta, and amber",
+          "monolithic holographic billboards looming above",
+        ],
+      },
+      livepeerOutputs: [
+        {
+          type: "image",
+          capability: "flux-dev",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL21vbmtleS9DOGJidDFkZ1hQOW5qX1ptdmtJejJfY2ZjY2MyZWIzYzg2NDBlZDg0ZTc5ZjU1Mjc4MmJkNzguanBn.ac36915af7652a5c/cfccc2eb3c8640ed84e79f552782bd78.jpg",
+          costUsd: 0.003,
+          elapsedMs: 1420,
+        },
+        {
+          type: "video",
+          capability: "kling",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2thbmdhcm9vL240a2VCS2Z0Y3lKNE85V2VLVzE5bl9vdXRwdXQubXA0.ac36915af7652a5c/n4keBKftcyJ4O9WeKW19n_output.mp4",
+          costUsd: 0.015,
+          elapsedMs: 4200,
+        },
+        {
+          type: "audio",
+          capability: "sonilo",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL21vbmtleS8wVGFyUkVrdlV2OEVvN3Y3cWRsTGtfb3V0cHV0Lm1wMw.ac36915af7652a5c/0TarREkvUv8Eo7v7qdlLk_output.mp3",
+          costUsd: 0.002,
+          elapsedMs: 850,
+        },
+      ],
+      lineage: {
+        derivedFrom: {
+          characters: ["did:dkg:continuum/character/char-ren-01"],
+          leitmotifs: ["did:dkg:continuum/leitmotif/motif-ren-blade-01"],
+          set: "did:dkg:continuum/set/set-rain-alley-01",
+        },
+        provenance: {
+          generatedAt: "2026-03-09T18:30:00.000Z",
+          livepeerCapabilities: ["flux-dev", "kling", "sonilo"],
+          promptFingerprint: "e8b19a77f2c01d94",
+        },
+      },
+    },
+    {
+      id: "ronin-scene-02",
+      projectId: "proj-ronin-echoes",
+      ual: "did:dkg:continuum/scene/ronin-scene-02",
+      composedPrompt: "Character 'Yuki' (Netrunner Ghost): cybernetic datajack behind ear, translucent holographic visor. Setting: Neo-Tokyo Sector 7 Rain Alley. Action: Yuki intercepts the encrypted corporate stream from an abandoned neon stall.",
+      createdAt: "2026-03-09T18:45:00.000Z",
+      request: {
+        projectId: "proj-ronin-echoes",
+        episodeNumber: 1,
+        sceneNumber: 2,
+        prompt: "Yuki intercepts the encrypted corporate stream from an abandoned neon stall.",
+        cast: {
+          characterIds: ["char-yuki-02"],
+          setId: "set-rain-alley-01",
+          leitmotifIds: ["motif-ghost-protocol-02"],
+        },
+      },
+      dkgConstraints: {
+        characterTraitsInjected: {
+          Yuki: [
+            "cybernetic datajack behind right ear with pulsing cyan LED",
+            "translucent holographic visor displaying streaming hex code",
+            "oversized matte-black techwear trench with reflective circuit embroidery",
+          ],
+        },
+        negativePromptsInjected: ["generic fantasy", "bright sunshine", "medieval armor"],
+        leitmotifsBound: ["motif-ghost-protocol-02"],
+        setConstraintsApplied: [
+          "perpetual heavy downpour with visible raindrop streaks",
+          "neon reflections on wet asphalt in cyan, magenta, and amber",
+        ],
+      },
+      livepeerOutputs: [
+        {
+          type: "image",
+          capability: "flux-dev",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2xpb24vczd5elZ3OU5hSFFxWGdGMWV0clJZX2JmZjI4ZDRkNzY5YjRlNzJhNjdlYTgwNmQyZTM3NWFjLmpwZw.ac36915af7652a5c/bff28d4d769b4e72a67ea806d2e375ac.jpg",
+          costUsd: 0.003,
+          elapsedMs: 1350,
+        },
+        {
+          type: "video",
+          capability: "kling",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL3BhdWxpbmEvWVg2ZlRzZ0tzb013b19jNGNlOWE5Mi5tcDQ.ac36915af7652a5c/YX6fTsgKsoMwo_c4ce9a92.mp4",
+          costUsd: 0.015,
+          elapsedMs: 4100,
+        },
+        {
+          type: "audio",
+          capability: "sonilo",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL21vbmtleS9JNVpmM1d2M295XzZFc2x1WG9qNWVfb3V0cHV0Lm1wMw.ac36915af7652a5c/I5Zf3Wv3oy_6EsluXoj5e_output.mp3",
+          costUsd: 0.002,
+          elapsedMs: 910,
+        },
+      ],
+      lineage: {
+        derivedFrom: {
+          characters: ["did:dkg:continuum/character/char-yuki-02"],
+          leitmotifs: ["did:dkg:continuum/leitmotif/motif-ghost-protocol-02"],
+          set: "did:dkg:continuum/set/set-rain-alley-01",
+        },
+        provenance: {
+          generatedAt: "2026-03-09T18:45:00.000Z",
+          livepeerCapabilities: ["flux-dev", "kling", "sonilo"],
+          promptFingerprint: "a93bf401c3809e6d",
+        },
+      },
+    },
+    {
+      id: "ronin-scene-03",
+      projectId: "proj-ronin-echoes",
+      ual: "did:dkg:continuum/scene/ronin-scene-03",
+      composedPrompt: "Character 'Ren' & 'Yuki'. Setting: Neo-Tokyo Sector 7 Rain Alley. Action: Yuki reveals the broken transmitter to Ren as sirens echo through the flooded alleyways.",
+      createdAt: "2026-03-09T19:00:00.000Z",
+      request: {
+        projectId: "proj-ronin-echoes",
+        episodeNumber: 1,
+        sceneNumber: 3,
+        prompt: "Yuki reveals the broken transmitter to Ren as sirens echo through the flooded alleyways.",
+        cast: {
+          characterIds: ["char-ren-01", "char-yuki-02"],
+          setId: "set-rain-alley-01",
+          leitmotifIds: ["motif-ren-blade-01"],
+        },
+      },
+      dkgConstraints: {
+        characterTraitsInjected: {
+          Ren: ["carbon-fiber prosthetic arm", "amber ocular implant"],
+          Yuki: ["holographic visor", "techwear trench"],
+        },
+        negativePromptsInjected: ["generic anime", "clean chrome"],
+        leitmotifsBound: ["motif-ren-blade-01"],
+        setConstraintsApplied: ["perpetual heavy downpour", "neon reflections"],
+      },
+      livepeerOutputs: [
+        {
+          type: "image",
+          capability: "flux-dev",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL3BhbmRhL0Ntd3N3M2h3d3A1QnF6dDVTZ1FnSl9jODNmYzBhZDllYzk0YzRkYjJjZjJhNTEyZTY2MWE0NC5qcGc.ac36915af7652a5c/c83fc0ad9ec94c4db2cf2a512e661a44.jpg",
+          costUsd: 0.003,
+          elapsedMs: 1510,
+        },
+        {
+          type: "video",
+          capability: "kling",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDQvODY3R05pMEtseDFEOG9neXA2clJZX291dHB1dC5tcDQ.ac36915af7652a5c/867GNi0Klx1D8ogyp6rRY_output.mp4",
+          costUsd: 0.015,
+          elapsedMs: 4400,
+        },
+        {
+          type: "audio",
+          capability: "sonilo",
+          url: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL21vbmtleS8wVGFyUkVrdlV2OEVvN3Y3cWRsTGtfb3V0cHV0Lm1wMw.ac36915af7652a5c/0TarREkvUv8Eo7v7qdlLk_output.mp3",
+          costUsd: 0.002,
+          elapsedMs: 850,
+        },
+      ],
+      lineage: {
+        derivedFrom: {
+          characters: ["did:dkg:continuum/character/char-ren-01", "did:dkg:continuum/character/char-yuki-02"],
+          leitmotifs: ["did:dkg:continuum/leitmotif/motif-ren-blade-01"],
+          set: "did:dkg:continuum/set/set-rain-alley-01",
+        },
+        provenance: {
+          generatedAt: "2026-03-09T19:00:00.000Z",
+          livepeerCapabilities: ["flux-dev", "kling", "sonilo"],
+          promptFingerprint: "c458a21f1d77b83e",
+        },
+      },
+    }
+  );
+  console.log(`[Scenes] Seeded ${scenes.length} canonical scenes with verified media`);
 }
 
 const director = new Director(livepeer, dkg, characters, leitmotifs, sets);

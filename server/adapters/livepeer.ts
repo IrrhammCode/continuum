@@ -27,9 +27,16 @@ export class MockLivepeerAdapter implements LivepeerAdapter {
     // Simulate latency
     await new Promise((r) => setTimeout(r, 800));
 
+    // High-fidelity public CDN fallbacks (Livepeer / Fal storage)
+    const fallbackUrls: Record<string, string> = {
+      image: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
+      video: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWRkNTgvdTRpOTJBNV9iVXljOVQ4eWczQ3l1X291dHB1dC5tcDQ.4a0ee966c7996e2b/u4i92A5_bUyc9T8yg3Cyu_output.mp4",
+      audio: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZGIvTGd0LUwtZEEyT0UwZXM1eE83anNFX291dHB1dC5tcDM.440ba9383ebbbd15/Lgt-L-dA2OE0es5xO7jsE_output.mp3",
+    };
+
     return {
       type,
-      url: `https://example.invalid/mock/${type}/${hash}`,
+      url: fallbackUrls[type] ?? fallbackUrls.image,
       capability,
       costUsd: type === "image" ? 0.026 : type === "video" ? 0.15 : 0.05,
       elapsedMs: 800,

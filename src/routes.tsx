@@ -852,14 +852,21 @@ export function Sets() {
     setTimeout(() => setCopiedUal(null), 2200);
   };
 
-  const applySetPreset = (preset: "alley" | "garden" | "archive") => {
-    if (preset === "alley") {
+  const applySetPreset = (preset: "alley" | "garden" | "archive" | "derelict" | "rain") => {
+    if (preset === "alley" || preset === "rain") {
       setSetFormName("Neo-Tokyo Rain District");
       setSetFormDesc("A rain-soaked cyberpunk alley in a neon-drenched megacity. Towering holographic billboards flicker above narrow streets.");
       setSetFormLighting("Volumetric neon fog, wet asphalt reflections, deep rim shadows");
       setSetFormTod("Night");
       setSetFormPalette(["#0A0A1A", "#7C3AED", "#00FF88", "#06B6D4"]);
       setSetFormNegative("no direct daylight, no rural greenery, no natural vegetation");
+    } else if (preset === "derelict") {
+      setSetFormName("Derelict Station Alpha");
+      setSetFormDesc("An abandoned orbital corridor overgrown with silent wiring and shattered bulkheads. Distant starlight cuts through frosted decompression cracks.");
+      setSetFormLighting("Stark amber emergency beacon pulse, rim reflections on frozen titanium");
+      setSetFormTod("Void / Zero-G");
+      setSetFormPalette(["#080C14", "#F59E0B", "#1E293B", "#38BDF8"]);
+      setSetFormNegative("no atmospheric clouds, no blue sky, no warm sunlight");
     } else if (preset === "garden") {
       setSetFormName("The Floating Sky Garden");
       setSetFormDesc("A suspended rooftop sanctuary atop the megacity, lit by bioluminescent moonwater pools, pale orchids, and tranquil night haze.");
@@ -1133,16 +1140,16 @@ export function Sets() {
               <div style={{ marginBottom: "14px" }}>
                 <span style={{ fontSize: "10px", color: "#8a8894", fontWeight: 700 }}>QUICK PRESETS:</span>
                 <div style={{ display: "flex", gap: "6px", flexWrap: "wrap", marginTop: "6px" }}>
-                  <button type="button" className="preset-chip-btn" onClick={() => applyPreset("rain")}>
+                  <button type="button" className="preset-chip-btn" onClick={() => applySetPreset("rain")}>
                     + Neo-Tokyo Rain
                   </button>
-                  <button type="button" className="preset-chip-btn" onClick={() => applyPreset("derelict")}>
+                  <button type="button" className="preset-chip-btn" onClick={() => applySetPreset("derelict")}>
                     + Derelict Station Alpha
                   </button>
-                  <button type="button" className="preset-chip-btn" onClick={() => applyPreset("garden")}>
+                  <button type="button" className="preset-chip-btn" onClick={() => applySetPreset("garden")}>
                     + Floating Sky Garden
                   </button>
-                  <button type="button" className="preset-chip-btn" onClick={() => applyPreset("archive")}>
+                  <button type="button" className="preset-chip-btn" onClick={() => applySetPreset("archive")}>
                     + Subterranean Archive
                   </button>
                 </div>
@@ -1241,6 +1248,7 @@ export function Sets() {
 
 export function Sound() {
   const { activeProject, projects, setActiveProject } = useProject();
+  const { showToast } = useToast();
   const navigate = useNavigate();
   const [tab, setTab] = useState("All Audio");
   const [playingId, setPlayingId] = useState<string | null>(null);
@@ -2675,35 +2683,35 @@ export function Episodes() {
     {
       id: "01",
       name: "The Awakening",
-      duration: "00:15",
+      duration: "00:05",
       cast: "Ren Akiyama",
       status: "DKG VERIFIED",
       visual: "awake",
-      mediaUrl: "",
-      isVideo: false,
-      ual: "did:dkg:continuum/scene/seed-01",
+      mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWRkNTgvdTRpOTJBNV9iVXljOVQ4eWczQ3l1X291dHB1dC5tcDQ.4a0ee966c7996e2b/u4i92A5_bUyc9T8yg3Cyu_output.mp4",
+      isVideo: true,
+      ual: "did:dkg:continuum/scene/ronin-scene-01",
     },
     {
       id: "02",
       name: "Rain Alley Encounter",
-      duration: "00:22",
+      duration: "00:05",
       cast: "Ren, Yuki",
       status: "DKG VERIFIED",
       visual: "alley",
-      mediaUrl: "",
-      isVideo: false,
-      ual: "did:dkg:continuum/scene/seed-02",
+      mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjQvdFA0T0p1ZlpwRi0yZmhyM1NLVjRaX291dHB1dC5tcDQ.4474dd0289d5fc4d/tP4OJufZpF-2fhr3SKV4Z_output.mp4",
+      isVideo: true,
+      ual: "did:dkg:continuum/scene/ronin-scene-02",
     },
     {
       id: "03",
       name: "The rain remembers every name.",
-      duration: "00:12",
+      duration: "00:05",
       cast: "Ren, Yuki",
-      status: "READY TO DIRECT",
+      status: "DKG VERIFIED",
       visual: "rain",
-      mediaUrl: "",
-      isVideo: false,
-      ual: "did:dkg:continuum/scene/seed-03",
+      mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDQvODY3R05pMEtseDFEOG9neXA2clJZX291dHB1dC5tcDQ.ac36915af7652a5c/867GNi0Klx1D8ogyp6rRY_output.mp4",
+      isVideo: true,
+      ual: "did:dkg:continuum/scene/ronin-scene-03",
     },
   ];
 
@@ -4948,9 +4956,11 @@ export function Settings() {
     if (!activeProject?.id) return;
     const pId = activeProject.id;
     Promise.all([
-      fetch(`/api/vault/sounds?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
+      fetch(`/api/vault/characters?projectId=${encodeURIComponent(pId)}`).then((r) => r.json()),
+      fetch(`/api/vault/sets?projectId=${encodeURIComponent(pId)}`).then((r) => r.json()),
+      fetch(`/api/vault/sounds?projectId=${encodeURIComponent(pId)}`).then((r) => r.json()),
       fetch(`/api/vault/props`).then((r) => r.json()),
-      fetch(`/api/scenes?projectId=${encodeURIComponent(activeProject.id)}`).then((r) => r.json()),
+      fetch(`/api/scenes?projectId=${encodeURIComponent(pId)}`).then((r) => r.json()),
     ])
       .then(([chars, sets, sounds, props, scenes]) => {
         const pProps = Array.isArray(props) ? props.filter((p: any) => (p.projectId ?? "proj-ronin-echoes") === activeProject.id) : [];

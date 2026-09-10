@@ -49,6 +49,7 @@ export const CHARACTERS: CharacterAsset[] = [
         "deep, gravelly, measured — speaks in short precise sentences",
       ttsModel: "onyx",
     },
+    avatarUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3MWUvS3RWQUplcmdRRkUxcUFVOWdXTTdNLmpwZw.85e66edb7653a7de/KtVAJergQFE1qAU9gWM7M.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -92,6 +93,7 @@ export const CHARACTERS: CharacterAsset[] = [
         "soft, fast-paced, slightly playful — uses tech jargon casually",
       ttsModel: "nova",
     },
+    avatarUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQxMmIvRjZjTG5KZE43SkZLaFNTLXFCMkgxLmpwZw.47fdb1a8514009fd/F6cLnJdN7JFKhSS-qB2H1.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -133,6 +135,7 @@ export const CHARACTERS: CharacterAsset[] = [
         "calm, analytical, reverberant over internal suit comms",
       ttsModel: "echo",
     },
+    avatarUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
 ];
@@ -157,6 +160,7 @@ export const LEITMOTIFS: LeitmotifAsset[] = [
       "distorted electric guitar stabs",
       "reverb-heavy snare",
     ],
+    audioUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZGIvTGd0LUwtZEEyT0UwZXM1eE83anNFX291dHB1dC5tcDM.440ba9383ebbbd15/Lgt-L-dA2OE0es5xO7jsE_output.mp3",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -174,6 +178,7 @@ export const LEITMOTIFS: LeitmotifAsset[] = [
       "bitcrushed vocal chops",
       "lo-fi piano",
     ],
+    audioUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3MjIvWnJvY0RKREZIaUJzc19PcVU1VzN0X291dHB1dC5tcDM.1fd97797c700d26c/ZrocDJDFHiBss_OqU5W3t_output.mp3",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -190,6 +195,7 @@ export const LEITMOTIFS: LeitmotifAsset[] = [
       "intermittent radio static clicks",
       "reverb-drenched glass harmonica",
     ],
+    audioUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjcveW9vSWhXdjg4TjRtemNBNXkwdFBIX291dHB1dC5tcDM.9fa53b76e0fcc4c3/yooIhWv88N4mzcA5y0tPH_output.mp3",
     createdAt: "2026-09-10T04:00:00Z",
   },
 ];
@@ -217,6 +223,7 @@ export const SETS: SetAsset[] = [
       "natural forest",
       "bright cheerful atmosphere",
     ],
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDEvc3ZZOHV1Tk10VUxSXzB4WHFNQUJRLmpwZw.26042ef301363d28/svY8uuNMtULR_0xXqMABQ.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -236,6 +243,7 @@ export const SETS: SetAsset[] = [
       "desert landscape",
       "crowded city street",
     ],
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
   {
@@ -256,6 +264,7 @@ export const SETS: SetAsset[] = [
       "warm cozy room",
       "crowded street",
     ],
+    imageUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3MWUvS3RWQUplcmdRRkUxcUFVOWdXTTdNLmpwZw.85e66edb7653a7de/KtVAJergQFE1qAU9gWM7M.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
 ];

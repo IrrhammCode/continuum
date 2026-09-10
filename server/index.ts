@@ -729,13 +729,23 @@ app.get("/api/dkg/export/:type/:id", async (req, res) => {
 
 // ── SPA Fallback (Express 5 requires named wildcard) ──
 app.get("/{*path}", (_req, res) => {
-  res.sendFile(path.join(clientDir, "index.html"));
+  const indexHtml = path.join(clientDir, "index.html");
+  if (fs.existsSync(indexHtml)) {
+    res.sendFile(indexHtml);
+  } else {
+    res.status(200).send("Continuum API is live. Waiting for frontend build.");
+  }
 });
 
 // ── Start ──
-app.listen(PORT, () => {
-  console.log(`\n✦ Continuum Studio running → http://localhost:${PORT}\n`);
-  console.log(`  Livepeer: ${process.env.LIVEPEER_MODE ?? "mock"} mode`);
-  console.log(`  DKG:      ${process.env.DKG_MODE ?? "file"} mode`);
-  console.log(`  Vault:    ${characters.length} characters, ${leitmotifs.length} leitmotifs, ${sets.length} sets\n`);
-});
+if (process.env.VERCEL !== "1") {
+  app.listen(PORT, () => {
+    console.log(`\n✦ Continuum Studio running → http://localhost:${PORT}\n`);
+    console.log(`  Livepeer: ${process.env.LIVEPEER_MODE ?? "mock"} mode`);
+    console.log(`  DKG:      ${process.env.DKG_MODE ?? "file"} mode`);
+    console.log(`  Vault:    ${characters.length} characters, ${leitmotifs.length} leitmotifs, ${sets.length} sets\n`);
+  });
+}
+
+export default app;
+export { app };

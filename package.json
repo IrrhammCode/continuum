@@ -7,8 +7,12 @@
   "scripts": {
     "dev": "tsx --env-file=.env server/index.ts",
     "build": "vite build && tsc -p tsconfig.server.json",
-    "start": "node --env-file=.env dist/server/server/index.js",
+    "start": "node dist/server/server/index.js",
+    "heroku-postbuild": "npm run build",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "dependencies": {
     "@tailwindcss/vite": "^4.3.3",

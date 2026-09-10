@@ -978,10 +978,18 @@ app.post("/api/scenes/render-stream", async (req, res) => {
     "Cache-Control": "no-cache",
     "Connection": "keep-alive",
   });
+  if (typeof (res as any).flushHeaders === "function") {
+    (res as any).flushHeaders();
+  }
 
   const sendEvent = (event: string, data: unknown) => {
     res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
   };
+
+  // Heartbeat to prevent Heroku H15 Idle Connection drops during long Livepeer generation
+  const keepAlive = setInterval(() => {
+    res.write(`: ping\n\n`);
+  }, 10000);
 
   try {
     console.log(`[Director:Stream] Rendering scene: "${body.prompt}"`);
@@ -992,9 +1000,11 @@ app.post("/api/scenes/render-stream", async (req, res) => {
 
     result.projectId = body.projectId ?? "proj-ronin-echoes";
     scenes.push(result);
+    clearInterval(keepAlive);
     sendEvent("complete", result);
     res.end();
   } catch (err) {
+    clearInterval(keepAlive);
     console.error("[Director:Stream] Error:", err);
     sendEvent("error", { error: (err as Error).message });
     res.end();

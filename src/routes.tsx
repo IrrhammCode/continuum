@@ -2675,6 +2675,7 @@ export function Episodes() {
     status: string;
     visual: string;
     mediaUrl: string;
+    posterUrl?: string;
     isVideo?: boolean;
     ual: string;
   }
@@ -2688,6 +2689,7 @@ export function Episodes() {
       status: "DKG VERIFIED",
       visual: "awake",
       mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWRkNTgvdTRpOTJBNV9iVXljOVQ4eWczQ3l1X291dHB1dC5tcDQ.4a0ee966c7996e2b/u4i92A5_bUyc9T8yg3Cyu_output.mp4",
+      posterUrl: "/assets/continuity/ren-anchor-1.jpg",
       isVideo: true,
       ual: "did:dkg:continuum/scene/ronin-scene-01",
     },
@@ -2699,6 +2701,7 @@ export function Episodes() {
       status: "DKG VERIFIED",
       visual: "alley",
       mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjQvdFA0T0p1ZlpwRi0yZmhyM1NLVjRaX291dHB1dC5tcDQ.4474dd0289d5fc4d/tP4OJufZpF-2fhr3SKV4Z_output.mp4",
+      posterUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQxMmIvRjZjTG5KZE43SkZLaFNTLXFCMkgxLmpwZw.47fdb1a8514009fd/F6cLnJdN7JFKhSS-qB2H1.jpg",
       isVideo: true,
       ual: "did:dkg:continuum/scene/ronin-scene-02",
     },
@@ -2710,6 +2713,7 @@ export function Episodes() {
       status: "DKG VERIFIED",
       visual: "rain",
       mediaUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDQvODY3R05pMEtseDFEOG9neXA2clJZX291dHB1dC5tcDQ.ac36915af7652a5c/867GNi0Klx1D8ogyp6rRY_output.mp4",
+      posterUrl: "/assets/continuity/ren-anchor-2.jpg",
       isVideo: true,
       ual: "did:dkg:continuum/scene/ronin-scene-03",
     },
@@ -2720,15 +2724,29 @@ export function Episodes() {
       ? realScenes.map((s, idx) => {
           const vid = s.livepeerOutputs?.find((o) => o.type === "video");
           const img = s.livepeerOutputs?.find((o) => o.type === "image");
-          const media = vid?.url || img?.url;
+          const fallbackPoster =
+            idx === 0
+              ? "/assets/continuity/ren-anchor-1.jpg"
+              : idx === 1
+              ? "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQxMmIvRjZjTG5KZE43SkZLaFNTLXFCMkgxLmpwZw.47fdb1a8514009fd/F6cLnJdN7JFKhSS-qB2H1.jpg"
+              : "/assets/continuity/ren-anchor-2.jpg";
+          const media = vid?.url || img?.url || fallbackPoster;
+          const castNames =
+            s.request.cast?.characterIds && s.request.cast.characterIds.length > 0
+              ? s.request.cast.characterIds
+                  .map((c) => (c.includes("ren") ? "Ren" : c.includes("yuki") ? "Yuki" : c.includes("vance") ? "Dr. Vance" : c))
+                  .join(", ")
+              : "Ren, Yuki";
+
           return {
             id: String(idx + 1).padStart(2, "0"),
             name: s.request.prompt.slice(0, 45) + (s.request.prompt.length > 45 ? "…" : ""),
             duration: vid ? "00:05" : "00:01",
-            cast: "Livepeer Cast",
+            cast: castNames,
             status: "DKG VERIFIED",
             visual: "rain",
-            mediaUrl: media && !media.includes("example.invalid") ? media : "",
+            mediaUrl: media && !media.includes("example.invalid") ? media : fallbackPoster,
+            posterUrl: img?.url && !img.url.includes("example.invalid") ? img.url : fallbackPoster,
             isVideo: !!vid && !vid.url.includes("example.invalid"),
             ual: s.ual ?? `did:dkg:continuum/scene/${s.id}`,
           };
@@ -2882,28 +2900,32 @@ export function Episodes() {
               onClick={() => navigate("/studio")}
               style={{ cursor: "pointer" }}
             >
-              <div className="scene-thumb" style={{ position: "relative", overflow: "hidden" }}>
-                {scene.mediaUrl &&
-                  (scene.isVideo ? (
-                    <video
-                      src={scene.mediaUrl}
-                      muted
-                      loop
-                      autoPlay
-                      playsInline
-                      style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }}
-                    />
-                  ) : (
-                    <img
-                      src={scene.mediaUrl}
-                      alt={scene.name}
-                      style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0 }}
-                    />
-                  ))}
-                <span className="scene-number" style={{ position: "relative", zIndex: 2 }}>
+              <div className="scene-thumb" style={{ position: "relative", overflow: "hidden", background: "#0c0e17" }}>
+                {scene.isVideo && scene.mediaUrl ? (
+                  <video
+                    src={scene.mediaUrl}
+                    poster={scene.posterUrl}
+                    muted
+                    loop
+                    autoPlay
+                    playsInline
+                    style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0, zIndex: 1 }}
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                ) : null}
+                <img
+                  src={scene.posterUrl || scene.mediaUrl || "/assets/continuity/ren-anchor-1.jpg"}
+                  alt={scene.name}
+                  style={{ width: "100%", height: "100%", objectFit: "cover", position: "absolute", top: 0, left: 0, zIndex: 0 }}
+                  onError={(e) => {
+                    e.currentTarget.src = "/assets/continuity/ren-anchor-1.jpg";
+                  }}
+                />
+                <span className="scene-number" style={{ position: "absolute", zIndex: 3, top: 10, left: 10 }}>
                   SCENE {scene.id}
                 </span>
-                <div className="scene-silhouette"></div>
               </div>
               <div className="scene-copy">
                 <h3>{scene.name}</h3>

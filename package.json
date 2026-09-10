@@ -1,0 +1,32 @@
+{
+  "name": "continuum",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Episodic AI cinema studio with verifiable character and audio continuity — Livepeer Agent + OriginTrail DKG.",
+  "scripts": {
+    "dev": "tsx --env-file=.env server/index.ts",
+    "build": "vite build && tsc -p tsconfig.server.json",
+    "start": "node --env-file=.env dist/server/server/index.js",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.server.json --noEmit"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "express": "^5.1.0",
+    "lucide-react": "^0.542.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-router": "^7.18.3",
+    "tailwindcss": "^4.3.3"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.3.1",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "tsx": "^4.20.5",
+    "typescript": "^5.9.2",
+    "vite": "^7.1.4"
+  }
+}

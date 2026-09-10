@@ -505,7 +505,11 @@ export function DirectorStudio() {
           <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
             {vaultSets.map((s) => {
               const isSelected = selectedSetId === s.id;
-              const displayImg = s.imageUrl || (s.name.includes("Garden") ? "/assets/vault/sky-garden.jpg" : s.name.includes("Derelict") ? "/assets/vault/derelict-alpha.jpg" : "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ4MDEvc3ZZOHV1Tk10VUxSXzB4WHFNQUJRLmpwZw.26042ef301363d28/svY8uuNMtULR_0xXqMABQ.jpg");
+              const displayImg = s.name.includes("Garden")
+                ? "/assets/vault/sky-garden.jpg"
+                : s.name.includes("Derelict")
+                ? "/assets/vault/derelict-alpha.jpg"
+                : (s.imageUrl && !s.imageUrl.includes("example.invalid") ? s.imageUrl : "/assets/continuity/ren-anchor-1.jpg");
               return (
                 <button
                   key={s.id}
@@ -528,6 +532,9 @@ export function DirectorStudio() {
                   <img
                     src={displayImg}
                     alt={s.name}
+                    onError={(e) => {
+                      (e.currentTarget as HTMLImageElement).src = "/assets/continuity/ren-anchor-1.jpg";
+                    }}
                     style={{
                       width: "62px",
                       height: "42px",
@@ -564,7 +571,11 @@ export function DirectorStudio() {
             <div className="chips" style={{ display: "flex", gap: "10px", flexWrap: "wrap" }}>
               {vaultProps.map((p) => {
                 const isSelected = selectedPropIds.includes(p.id);
-                const displayImg = p.imageUrl || (p.name.includes("Katana") ? "/assets/continuity/ren-anchor-2.jpg" : p.name.includes("Cartridge") ? "/assets/vault/sky-garden.jpg" : "/assets/vault/derelict-alpha.jpg");
+                const displayImg = p.name.includes("Katana")
+                  ? "/assets/continuity/ren-anchor-2.jpg"
+                  : (p.name.includes("Cartridge") || p.name.includes("Transmitter"))
+                  ? "/assets/vault/sky-garden.jpg"
+                  : (p.imageUrl && !p.imageUrl.includes("example.invalid") ? p.imageUrl : "/assets/vault/derelict-alpha.jpg");
                 return (
                   <button
                     key={p.id}
@@ -589,6 +600,9 @@ export function DirectorStudio() {
                     <img
                       src={displayImg}
                       alt={p.name}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = "/assets/vault/derelict-alpha.jpg";
+                      }}
                       style={{
                         width: "42px",
                         height: "42px",

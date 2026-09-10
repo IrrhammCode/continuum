@@ -49,6 +49,9 @@ export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   );
 
   globalShowToast = showToast;
+  if (typeof window !== "undefined") {
+    (window as any).showHudToast = showToast;
+  }
 
   const handleCopyUal = (id: string, ual: string) => {
     navigator.clipboard.writeText(ual);

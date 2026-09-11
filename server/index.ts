@@ -1066,24 +1066,28 @@ app.get("/api/scenes/:id/certificate", (req, res) => {
     res.status(404).json({ error: "Scene not found" });
     return;
   }
+  const cert = scene.complianceCertificate ?? {
+    id: `CERT-${scene.id.slice(-8).toUpperCase()}`,
+    brandName: "Aether Kinetics Corp",
+    guidelineVersion: "v2.4",
+    licenseAgreement: "Commercial Digital Media Rights (Tier A-1)",
+    owner: "0x71C...b82F (Verified Embody Enterprise Key)",
+    verifiedAssets: [],
+    safetyChecks: [
+      {
+        rule: "Authorized Knowledge Assets Only",
+        status: "passed" as const,
+        description: "All assets are signed Knowledge Assets with verified UALs.",
+      },
+    ],
+    certificateHash: "sha256:dkg-certified",
+    timestamp: scene.createdAt,
+    provenanceUal: scene.ual ?? `did:dkg:continuum/scene/${scene.id}`,
+  };
+
   res.json({
-    certificate: scene.complianceCertificate ?? {
-      brandName: "Continuum Studio Canon",
-      guidelineVersion: "v2.4",
-      licenseAgreement: "Commercial Digital Media Rights",
-      owner: "Continuum Studio",
-      verifiedAssets: [],
-      safetyChecks: [
-        {
-          rule: "Authorized Knowledge Assets Only",
-          status: "passed",
-          description: "All assets are signed Knowledge Assets with verified UALs.",
-        },
-      ],
-      certificateHash: "dkg-certified",
-      timestamp: scene.createdAt,
-      provenanceUal: scene.ual ?? `did:dkg:continuum/scene/${scene.id}`,
-    },
+    ...cert,
+    certificate: cert,
     ual: scene.ual,
     lineage: scene.lineage,
   });

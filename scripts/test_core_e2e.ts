@@ -371,7 +371,8 @@ async function main() {
   // 11. Enterprise Brand Compliance & Cryptographic Certificate Audit
   // ──────────────────────────────────────────────────────────
   header("11. Brand Compliance & Cryptographic Certificate Audit");
-  const certRes = await request(`/api/scenes/${sceneResult.id}/certificate`);
+  const rawCert = await request(`/api/scenes/${sceneResult.id}/certificate`);
+  const certRes = rawCert.certificate || rawCert;
   if (!certRes || !certRes.certificateHash) {
     throw new Error("Scene missing cryptographic brand compliance certificate!");
   }

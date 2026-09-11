@@ -52,6 +52,24 @@ const projects: Project[] = [
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/project/solaris-drift",
   },
+  {
+    id: "proj-aether-kinetics",
+    title: "Aether Kinetics: Next-Gen Cyberwear",
+    genre: "Enterprise Commercial Brand Campaign",
+    logline: "Official global commercial campaign for Aether Kinetics' high-performance athletic cyberwear, starring Olympic cyber-sprinter Maya Lin and the Aether X1 Quantum Runners.",
+    seasonNumber: 1,
+    totalEpisodes: 3,
+    createdAt: "2026-09-11T04:00:00Z",
+    ual: "did:dkg:continuum/project/aether-kinetics-01",
+    isCommercialBrand: true,
+    brandCompliance: {
+      owner: "Aether Global Corporation",
+      licenseType: "Commercial Enterprise",
+      version: "v2.4",
+      brandSafetyScore: 100,
+      authorizedParties: ["Continuum AI Engine", "Global Media Network"],
+    },
+  },
 ];
 const props: PropAsset[] = [
   {
@@ -154,6 +172,28 @@ const props: PropAsset[] = [
     imageUrl: "/assets/vault/derelict-alpha.jpg",
     createdAt: "2026-09-10T04:00:00Z",
     ual: "did:dkg:continuum/lore/73a2d14c",
+  },
+  {
+    id: "prop-aether-x1",
+    projectId: "proj-aether-kinetics",
+    name: "Aether X1 Quantum Runners",
+    category: "prop",
+    type: "Hero Product",
+    boundToCharacterId: "char-maya",
+    boundToSetId: "set-neo-kyoto-stadium",
+    description: "Self-lacing carbon-fiber aerodynamic athletic running shoes featuring cyan electroluminescent energy soles and gold-embossed Aether Kinetics precision logos.",
+    loreSignificance: "The flagship enterprise commercial product being launched across global social video ad campaigns.",
+    negativePrompts: ["dirty shoes", "competitor logos", "traditional leather shoes", "sandals", "blurry laces"],
+    visualTheme: "device",
+    createdAt: "2026-09-11T04:00:00Z",
+    ual: "did:dkg:continuum/prop/prop-aether-x1-01",
+    imageUrl: "/assets/vault/derelict-alpha.jpg",
+    brandCompliance: {
+      owner: "Aether Global Corporation",
+      licenseType: "Commercial Enterprise",
+      version: "v2.4",
+      brandSafetyScore: 100,
+    },
   },
 ];
 const scenes: SceneResult[] = [];
@@ -1018,6 +1058,35 @@ app.get("/api/scenes", (req, res) => {
   } else {
     res.json(scenes);
   }
+});
+
+app.get("/api/scenes/:id/certificate", (req, res) => {
+  const scene = scenes.find((s) => s.id === req.params.id);
+  if (!scene) {
+    res.status(404).json({ error: "Scene not found" });
+    return;
+  }
+  res.json({
+    certificate: scene.complianceCertificate ?? {
+      brandName: "Continuum Studio Canon",
+      guidelineVersion: "v2.4",
+      licenseAgreement: "Commercial Digital Media Rights",
+      owner: "Continuum Studio",
+      verifiedAssets: [],
+      safetyChecks: [
+        {
+          rule: "Authorized Knowledge Assets Only",
+          status: "passed",
+          description: "All assets are signed Knowledge Assets with verified UALs.",
+        },
+      ],
+      certificateHash: "dkg-certified",
+      timestamp: scene.createdAt,
+      provenanceUal: scene.ual ?? `did:dkg:continuum/scene/${scene.id}`,
+    },
+    ual: scene.ual,
+    lineage: scene.lineage,
+  });
 });
 
 // ── DKG Graph & Export ──

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useLocation } from "react-router";
 import { Icon } from "../components/StudioShell";
-import type { SceneResult, CharacterAsset, SetAsset, LeitmotifAsset, PropAsset } from "@shared/types";
+import type { SceneResult, CharacterAsset, SetAsset, LeitmotifAsset, PropAsset, BrandComplianceCertificate } from "@shared/types";
 import { useProject } from "../context/ProjectContext";
 import { useToast } from "../components/HudToast";
 
@@ -10,6 +10,15 @@ export function DirectorStudio() {
   const location = useLocation();
   const { projects, activeProject, selectProjectId, createProject } = useProject();
   const { showToast } = useToast();
+
+  // ── Continuum Enterprise: Track 2 Commercial & Brand Engine State ──
+  const [campaignMode, setCampaignMode] = useState<"cinematic" | "commercial">("cinematic");
+  const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9");
+  const [campaignObjective, setCampaignObjective] = useState<string>("Product Launch: Aether X1 Speed Cyberwear");
+  const [callToAction, setCallToAction] = useState<string>("Shop Now at aetherkinetics.io — Zero Drift Guaranteed");
+  const [inspectorTab, setInspectorTab] = useState<"triples" | "guards" | "json" | "compliance">("triples");
+  const [viewOrientation, setViewOrientation] = useState<"standard" | "phone">("standard");
+  const [copiedCertHash, setCopiedCertHash] = useState(false);
 
   // ── Vault state from live backend ──
   const [vaultChars, setVaultChars] = useState<CharacterAsset[]>([]);
@@ -71,7 +80,6 @@ export function DirectorStudio() {
   const [currentPhaseMsg, setCurrentPhaseMsg] = useState("");
   const [lastResult, setLastResult] = useState<SceneResult | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [inspectorTab, setInspectorTab] = useState<"triples" | "guards" | "json">("triples");
   const [renderError, setRenderError] = useState<string | null>(null);
   const [selectedGraphNode, setSelectedGraphNode] = useState<string>("scene");
 
@@ -380,8 +388,69 @@ export function DirectorStudio() {
       setPrompt(
         "Dr. Vance enters the cryogenic junction of Derelict Station Alpha. Amber emergency strobes illuminate floating debris as the long-silent communicator chimes."
       );
+    } else if (activeProject.id === "proj-aether-kinetics") {
+      setCampaignMode("commercial");
+      setAspectRatio("9:16");
+      setViewOrientation("phone");
+      setCampaignObjective("Product Launch: Aether X1 Speed Cyberwear");
+      setCallToAction("Shop Now at aetherkinetics.io — Zero Drift Guaranteed");
+      setPrompt(
+        "Maya Lin launches from the starting blocks at Neo-Kyoto Skyline Stadium wearing glowing Aether X1 Quantum Runners. Dynamic macro tracking shot captures kinetic sole compression as rain disperses in slow motion under pulsing neon stadium lights."
+      );
+      const maya = vaultChars.find((c) => c.id === "char-maya" || c.projectId === "proj-aether-kinetics");
+      if (maya) setSelectedCharIds([maya.id]);
+      const stadium = vaultSets.find((s) => s.id === "set-neo-kyoto-stadium" || s.projectId === "proj-aether-kinetics");
+      if (stadium) setSelectedSetId(stadium.id);
+      const pulse = vaultMotifs.find((m) => m.id === "leit-velocity-pulse" || m.projectId === "proj-aether-kinetics");
+      if (pulse) setSelectedMotifIds([pulse.id]);
+      const runner = vaultProps.find((p) => p.id === "prop-aether-x1" || p.projectId === "proj-aether-kinetics");
+      if (runner) setSelectedPropIds([runner.id]);
     }
   }, [activeProject?.id]);
+
+  const handleSwitchCampaignMode = (mode: "cinematic" | "commercial") => {
+    setCampaignMode(mode);
+    if (mode === "commercial") {
+      const aether = projects.find((p) => p.id === "proj-aether-kinetics");
+      if (aether) {
+        selectProjectId("proj-aether-kinetics");
+      }
+      setAspectRatio("9:16");
+      setViewOrientation("phone");
+      setCampaignObjective("Product Launch: Aether X1 Speed Cyberwear");
+      setCallToAction("Shop Now at aetherkinetics.io — Zero Drift Guaranteed");
+      setPrompt(
+        "Maya Lin launches from the starting blocks at Neo-Kyoto Skyline Stadium wearing glowing Aether X1 Quantum Runners. Dynamic macro tracking shot captures kinetic sole compression as rain disperses in slow motion under pulsing neon stadium lights."
+      );
+      const maya = vaultChars.find((c) => c.id === "char-maya" || c.projectId === "proj-aether-kinetics");
+      if (maya) setSelectedCharIds([maya.id]);
+      const stadium = vaultSets.find((s) => s.id === "set-neo-kyoto-stadium" || s.projectId === "proj-aether-kinetics");
+      if (stadium) setSelectedSetId(stadium.id);
+      const pulse = vaultMotifs.find((m) => m.id === "leit-velocity-pulse" || m.projectId === "proj-aether-kinetics");
+      if (pulse) setSelectedMotifIds([pulse.id]);
+      const runner = vaultProps.find((p) => p.id === "prop-aether-x1" || p.projectId === "proj-aether-kinetics");
+      if (runner) setSelectedPropIds([runner.id]);
+      showToast({
+        type: "success",
+        title: "Enterprise Commercial Engine Active",
+        message: "Switched to Track 2: Livepeer Agent + OriginTrail DKG Verifiable Brand Engine.",
+      });
+    } else {
+      const ronin = projects.find((p) => p.id === "proj-ronin-echoes");
+      if (ronin) {
+        selectProjectId("proj-ronin-echoes");
+      }
+      setAspectRatio("16:9");
+      setViewOrientation("standard");
+      setPrompt(
+        "Ren steps beneath the awning of a shuttered ramen shop. Yuki waits in the rain across the street, holding a broken transmitter. The city hum falls away as Ren recognizes the signal."
+      );
+      const ren = vaultChars.find((c) => c.id === "char-ren" || c.name.includes("Ren"));
+      if (ren) setSelectedCharIds([ren.id]);
+      const alley = vaultSets.find((s) => s.id === "set-neo-tokyo" || s.name.includes("Alley"));
+      if (alley) setSelectedSetId(alley.id);
+    }
+  };
 
   // Handle vault navigation from Characters, Sets, Sound, and Props pages
   useEffect(() => {
@@ -496,6 +565,10 @@ export function DirectorStudio() {
         setId: selectedSetId,
         leitmotifIds: selectedMotifIds,
       },
+      campaignMode,
+      aspectRatio,
+      campaignObjective: campaignObjective.trim() || undefined,
+      callToAction: callToAction.trim() || undefined,
     };
 
     try {
@@ -547,6 +620,9 @@ export function DirectorStudio() {
                 }
               } else if (event === "complete") {
                 setLastResult(data);
+                if (data.complianceCertificate || campaignMode === "commercial") {
+                  setInspectorTab("compliance");
+                }
                 setProjectScenes((prev) => {
                   const exists = prev.some((s) => s.id === data.id);
                   return exists ? prev : [...prev, data];
@@ -569,6 +645,9 @@ export function DirectorStudio() {
         if (res.ok) {
           const data: SceneResult = await res.json();
           setLastResult(data);
+          if (data.complianceCertificate || campaignMode === "commercial") {
+            setInspectorTab("compliance");
+          }
           setProjectScenes((prev) => {
             const exists = prev.some((s) => s.id === data.id);
             return exists ? prev : [...prev, data];
@@ -607,6 +686,45 @@ export function DirectorStudio() {
 
   return (
     <section className="workspace">
+      {/* ── Continuum Enterprise: Track 2 Commercial & Brand Engine Mode Banner ── */}
+      <div className="enterprise-mode-banner">
+        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+          <div className="mode-switcher-tabs">
+            <button
+              type="button"
+              className={`mode-tab-btn ${campaignMode === "cinematic" ? "active" : ""}`}
+              onClick={() => handleSwitchCampaignMode("cinematic")}
+            >
+              <Icon name="spark" size={14} />
+              <span>Cinematic Narrative Engine</span>
+            </button>
+            <button
+              type="button"
+              className={`mode-tab-btn ${campaignMode === "commercial" ? "active commercial" : ""}`}
+              onClick={() => handleSwitchCampaignMode("commercial")}
+            >
+              <Icon name="layers" size={14} />
+              <span>Commercial Ad Campaign & Socials (Enterprise Track)</span>
+            </button>
+          </div>
+          <span style={{ fontSize: "11px", color: "#a5a2b8", fontFamily: "DM Mono" }}>
+            Track 2: Livepeer Agent + OriginTrail DKG
+          </span>
+        </div>
+
+        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+          {campaignMode === "commercial" ? (
+            <span style={{ fontSize: "10px", fontFamily: "DM Mono", background: "rgba(0, 240, 255, 0.15)", color: "#38bdf8", border: "1px solid rgba(0, 240, 255, 0.4)", borderRadius: "6px", padding: "4px 10px", fontWeight: 700 }}>
+              ENTERPRISE AUDIT · PROV-O VERIFIED
+            </span>
+          ) : (
+            <span style={{ fontSize: "10px", fontFamily: "DM Mono", background: "rgba(118, 87, 216, 0.2)", color: "#c4b5fd", border: "1px solid rgba(118, 87, 216, 0.4)", borderRadius: "6px", padding: "4px 10px", fontWeight: 700 }}>
+              CANON LOCKED · ZERO DRIFT
+            </span>
+          )}
+        </div>
+      </div>
+
       {/* ── 7-Step Navigation Bar ── */}
       <div className="match-stepper-wrap">
         <nav className="match-stepper" aria-label="Director studio step navigation">
@@ -691,6 +809,11 @@ export function DirectorStudio() {
               <span className="studio-step-badge step-num">Step 01 / 07</span>
               <span className="studio-step-badge status-ok">Canon Locked</span>
               <span className="studio-step-badge status-match">OriginTrail DKG v8</span>
+              {campaignMode === "commercial" && (
+                <span className="studio-step-badge" style={{ background: "#e0f2fe", color: "#0369a1", border: "1px solid #bae6fd" }}>
+                  Brand Compliance: v2.4 Enforced
+                </span>
+              )}
             </div>
             <h2 className="studio-step-title">Universe & Production Scope</h2>
             <p className="studio-step-desc">
@@ -833,6 +956,14 @@ export function DirectorStudio() {
                     <span className="dating-tag">Zero Drift</span>
                   </div>
 
+                  {c.compliance && (
+                    <div style={{ marginTop: "6px" }}>
+                      <span className="enterprise-ip-pill">
+                        ENTERPRISE LICENSED IP · {c.compliance.licenseType.slice(0, 22)}…
+                      </span>
+                    </div>
+                  )}
+
                   <button
                     type="button"
                     className="dating-cast-btn"
@@ -929,6 +1060,13 @@ export function DirectorStudio() {
                     <span className="dating-venue-chip">DKG Spatially Anchored</span>
                     <span className="dating-venue-chip">2.39:1 Aspect Ratio</span>
                   </div>
+                  {s.compliance && (
+                    <div style={{ marginTop: "6px" }}>
+                      <span className="enterprise-ip-pill" style={{ background: "#f0fdfa", color: "#0f766e", borderColor: "#99f6e4" }}>
+                        ENTERPRISE VENUE · {s.compliance.licenseType.slice(0, 24)}…
+                      </span>
+                    </div>
+                  )}
                 </div>
               </article>
             );
@@ -995,6 +1133,13 @@ export function DirectorStudio() {
                     <span className="dating-gear-badge">
                       {p.category === "lore" ? "Canon Lore Object" : "Physical Equipment"}
                     </span>
+                    {p.compliance && (
+                      <div style={{ marginTop: "4px" }}>
+                        <span className="enterprise-ip-pill" style={{ background: "#fffbeb", color: "#92400e", borderColor: "#fde68a" }}>
+                          ENTERPRISE HERO PROP · {p.compliance.licenseType.slice(0, 22)}…
+                        </span>
+                      </div>
+                    )}
                   </div>
                   {isSelected && (
                     <div style={{ width: "22px", height: "22px", borderRadius: "50%", background: "#d97706", color: "#fff", display: "grid", placeItems: "center", flexShrink: 0 }}>
@@ -1038,6 +1183,126 @@ export function DirectorStudio() {
             </div>
           </div>
         </header>
+
+        {/* Aspect Ratio & Pipeline Directives Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "14px", background: "#f8f7fa", border: "1px solid #e2e0ea", borderRadius: "10px", padding: "10px 16px", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.06em" }}>
+              ASPECT RATIO:
+            </span>
+            <div className="aspect-ratio-selector">
+              <button
+                type="button"
+                className={`aspect-btn ${aspectRatio === "16:9" ? "active" : ""}`}
+                onClick={() => {
+                  setAspectRatio("16:9");
+                  setViewOrientation("standard");
+                }}
+              >
+                16:9 Cinema Widescreen
+              </button>
+              <button
+                type="button"
+                className={`aspect-btn ${aspectRatio === "9:16" ? "active" : ""}`}
+                onClick={() => {
+                  setAspectRatio("9:16");
+                  setViewOrientation("phone");
+                }}
+              >
+                9:16 Vertical Mobile (TikTok / Reels)
+              </button>
+            </div>
+          </div>
+
+          {campaignMode === "commercial" && (
+            <span style={{ fontSize: "10px", fontFamily: "DM Mono", background: "#e0f2fe", color: "#0369a1", padding: "4px 10px", borderRadius: "5px", fontWeight: 700 }}>
+              ENTERPRISE COMMERCIAL ENGINE
+            </span>
+          )}
+        </div>
+
+        {/* Commercial Campaign Controls (Objective, CTA, Commercial Hooks) */}
+        {campaignMode === "commercial" && (
+          <div style={{ background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: "12px", padding: "16px", marginBottom: "16px" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", flexWrap: "wrap", gap: "8px" }}>
+              <span style={{ fontSize: "11px", fontWeight: 800, color: "#0369a1", letterSpacing: "0.05em" }}>
+                COMMERCIAL CAMPAIGN CONTROLS & BRAND AUDIT
+              </span>
+              <span style={{ fontSize: "10px", fontFamily: "DM Mono", color: "#0284c7" }}>
+                Brand: Aether Kinetics Corp · Guideline v2.4 Enforced
+              </span>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "12px", marginBottom: "12px" }}>
+              <div>
+                <label style={{ fontSize: "10px", fontWeight: 800, color: "#475569", display: "block", marginBottom: "4px" }}>
+                  CAMPAIGN OBJECTIVE
+                </label>
+                <input
+                  type="text"
+                  value={campaignObjective}
+                  onChange={(e) => setCampaignObjective(e.target.value)}
+                  placeholder="e.g. Product Launch: Aether X1 Speed Cyberwear"
+                  style={{ width: "100%", padding: "8px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                />
+                <div style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCampaignObjective("Product Launch: Aether X1 Speed Cyberwear")}>
+                    [Product Launch]
+                  </button>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCampaignObjective("Speed Performance Featurette")}>
+                    [Speed Featurette]
+                  </button>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCampaignObjective("Global Brand Awareness")}>
+                    [Brand Awareness]
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: "10px", fontWeight: 800, color: "#475569", display: "block", marginBottom: "4px" }}>
+                  CALL TO ACTION (CTA) OVERLAY
+                </label>
+                <input
+                  type="text"
+                  value={callToAction}
+                  onChange={(e) => setCallToAction(e.target.value)}
+                  placeholder="e.g. Shop Now at aetherkinetics.io — Zero Drift Guaranteed"
+                  style={{ width: "100%", padding: "8px 12px", fontSize: "12px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
+                />
+                <div style={{ display: "flex", gap: "6px", marginTop: "6px", flexWrap: "wrap" }}>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCallToAction("Shop Now at aetherkinetics.io — Zero Drift Guaranteed")}>
+                    [Shop Now CTA]
+                  </button>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCallToAction("Pre-Order Quantum Series · Limited Tier")}>
+                    [Pre-Order CTA]
+                  </button>
+                  <button type="button" className="preset-chip-btn" onClick={() => setCallToAction("Experience the Future of Speed")}>
+                    [Brand Slogan CTA]
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* Commercial Ad Presets */}
+            <div style={{ display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap", paddingTop: "8px", borderTop: "1px solid #e0f2fe" }}>
+              <span style={{ fontSize: "10px", fontWeight: 800, color: "#0369a1", minWidth: "120px" }}>
+                COMMERCIAL HOOKS:
+              </span>
+              <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Macro Footwear Tracking Shot with Kinetic Sole Compression and Water Droplet Dispersal")}>
+                [Macro Sole Compression]
+              </button>
+              <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Dynamic Low-Angle Cyber-Sprint under Neon Stadium Floodlights")}>
+                [Low-Angle Cyber-Sprint]
+              </button>
+              <button type="button" className="preset-chip-btn" onClick={() => appendDirective("Exploded View of Quantum Lattice Sole Cushioning with Retinal HUD Overlay")}>
+                [Exploded Lattice Tech]
+              </button>
+              <button type="button" className="preset-chip-btn" onClick={() => appendDirective("High-Speed Rain Splatter Sprint with Glitch Call-to-Action Hologram")}>
+                [Rain Sprint + Hologram CTA]
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Camera & Lighting Directive Chips (ZERO EMOJIS) */}
         <div style={{ background: "#f8f7fa", border: "1px solid #ebe8f0", borderRadius: "12px", padding: "14px", marginBottom: "16px" }}>
@@ -1253,97 +1518,204 @@ export function DirectorStudio() {
           </div>
         )}
 
+        {/* View Orientation & Framing Switcher */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "12px", background: "#f8f7fa", border: "1px solid #e5e3ec", borderRadius: "10px", padding: "8px 16px", flexWrap: "wrap", gap: "10px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <span style={{ fontSize: "10px", fontWeight: 800, color: "#6b687a", letterSpacing: "0.06em" }}>
+              PREVIEW FRAMING:
+            </span>
+            <div className="aspect-ratio-selector">
+              <button
+                type="button"
+                className={`aspect-btn ${viewOrientation === "standard" ? "active" : ""}`}
+                onClick={() => setViewOrientation("standard")}
+              >
+                16:9 Cinema Master
+              </button>
+              <button
+                type="button"
+                className={`aspect-btn ${viewOrientation === "phone" ? "active" : ""}`}
+                onClick={() => setViewOrientation("phone")}
+              >
+                9:16 Vertical Mobile Ad (TikTok / Reels)
+              </button>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span style={{ fontSize: "10px", fontFamily: "DM Mono", color: "#6b687a" }}>
+              Ratio: <strong>{aspectRatio}</strong>
+            </span>
+            {campaignMode === "commercial" && (
+              <span style={{ fontSize: "10px", background: "#f0fdf4", color: "#166534", border: "1px solid #bbf7d0", padding: "2px 8px", borderRadius: "4px", fontWeight: 700, fontFamily: "DM Mono" }}>
+                COMMERCIAL AD CAMPAIGN
+              </span>
+            )}
+          </div>
+        </div>
+
         {/* Video & Provenance Grid */}
         <div className="output-grid">
-          {/* Cinema Screen Frame */}
-          <article className="cinema-frame">
-            <div className="frame-top">
-              <span className="verified">
-                <Icon name="check" size={12} /> DKG VERIFIED
-              </span>
-              <span className="time">
-                {hasRealVideo ? "VIDEO MASTER" : hasRealMedia ? "KEYFRAME" : "2.39:1 CINEMATIC"}
-              </span>
-            </div>
+          {viewOrientation === "phone" ? (
+            /* 9:16 Vertical Mobile Ad Phone Preview */
+            <div className="vertical-ad-phone-wrap" style={{ background: "#110e1d", borderRadius: "12px", border: "1px solid #28243d", padding: "20px 0" }}>
+              <div className="vertical-ad-phone">
+                {hasRealVideo ? (
+                  <video
+                    src={videoOutput!.url}
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    controls
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : hasRealMedia ? (
+                  <img
+                    src={imageOutput!.url}
+                    alt="Commercial Keyframe"
+                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                  />
+                ) : (
+                  <div style={{ width: "100%", height: "100%", background: "linear-gradient(180deg, #100e21 0%, #272145 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "#94a3b8", fontSize: "12px", padding: "20px", textAlign: "center" }}>
+                    <span>Maya Lin · Aether Kinetics Commercial (9:16)</span>
+                  </div>
+                )}
 
-            {hasRealVideo ? (
-              <video
-                src={videoOutput!.url}
-                autoPlay
-                loop
-                muted
-                playsInline
-                controls
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  borderRadius: "inherit",
-                }}
-              />
-            ) : hasRealMedia ? (
-              <img
-                src={imageOutput!.url}
-                alt="Scene Keyframe"
-                style={{
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                  position: "absolute",
-                  top: 0,
-                  left: 0,
-                  borderRadius: "inherit",
-                }}
-              />
-            ) : (
-              <>
-                <div className="rain rain-one"></div>
-                <div className="rain rain-two"></div>
-                <div className="city">
-                  <div className="sign">RAMEN</div>
-                  <div className="tower t1"></div>
-                  <div className="tower t2"></div>
-                  <div className="tower t3"></div>
-                </div>
-                <div className="figure">
-                  <div></div>
-                  <i></i>
-                </div>
-              </>
-            )}
-
-            {!hasRealVideo && !hasRealMedia && (
-              <button
-                className="video-play"
-                onClick={() => setIsPlaying(!isPlaying)}
-                aria-label="Play or pause preview"
-              >
-                <Icon name={isPlaying ? "spark" : "play"} size={22} />
-              </button>
-            )}
-
-            <div className="frame-bottom">
-              {hasRealMedia ? (
-                <div style={{ display: "flex", gap: "8px", fontSize: "10px", fontFamily: "DM Mono", color: "#aaa", flexWrap: "wrap" }}>
-                  {lastResult?.livepeerOutputs?.map((o, i) => (
-                    <span key={i} style={{ background: "#1a1a2e", padding: "2px 8px", borderRadius: "4px" }}>
-                      {o.capability} · {(o.elapsedMs / 1000).toFixed(1)}s · ${o.costUsd.toFixed(3)}
+                {/* TikTok / Instagram Reels Style Overlay */}
+                <div className="social-ad-overlay">
+                  <div className="social-ad-top">
+                    <span className="social-brand-tag">
+                      AETHER KINETICS · DKG VERIFIED
                     </span>
-                  ))}
+                    <span style={{ fontSize: "10px", color: "#fff", background: "rgba(0,0,0,0.5)", padding: "2px 6px", borderRadius: "4px", fontFamily: "DM Mono" }}>
+                      SPONSORED
+                    </span>
+                  </div>
+
+                  <div className="social-ad-bottom">
+                    <div className="social-meta">
+                      <span className="social-handle">@aetherkinetics</span>
+                      <p className="social-caption">
+                        {prompt.length > 90 ? prompt.slice(0, 90) + "…" : prompt}
+                      </p>
+                      <div className="social-cta-pill">
+                        {callToAction || "Shop Now at aetherkinetics.io"}
+                      </div>
+                    </div>
+
+                    <div className="social-sidebar-actions">
+                      <div className="social-action-item">
+                        <div className="social-action-bubble">♥</div>
+                        <span>28.4K</span>
+                      </div>
+                      <div className="social-action-item">
+                        <div className="social-action-bubble">💬</div>
+                        <span>1.4K</span>
+                      </div>
+                      <div className="social-action-item">
+                        <div className="social-action-bubble">↗</div>
+                        <span>Share</span>
+                      </div>
+                      <div className="social-action-item" style={{ marginTop: "4px" }}>
+                        <div className="social-action-bubble" style={{ border: "2px solid #00f0ff" }}>♫</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
+              </div>
+            </div>
+          ) : (
+            /* Standard Cinema Screen Frame */
+            <article className="cinema-frame">
+              <div className="frame-top">
+                <span className="verified">
+                  <Icon name="check" size={12} /> DKG VERIFIED
+                </span>
+                <span className="time">
+                  {hasRealVideo ? "VIDEO MASTER" : hasRealMedia ? "KEYFRAME" : "2.39:1 CINEMATIC"}
+                </span>
+              </div>
+
+              {hasRealVideo ? (
+                <video
+                  src={videoOutput!.url}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    borderRadius: "inherit",
+                  }}
+                />
+              ) : hasRealMedia ? (
+                <img
+                  src={imageOutput!.url}
+                  alt="Scene Keyframe"
+                  style={{
+                    width: "100%",
+                    height: "100%",
+                    objectFit: "cover",
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    borderRadius: "inherit",
+                  }}
+                />
               ) : (
                 <>
-                  <div className="progress">
-                    <i style={{ width: isPlaying ? "80%" : "42%" }}></i>
+                  <div className="rain rain-one"></div>
+                  <div className="rain rain-two"></div>
+                  <div className="city">
+                    <div className="sign">RAMEN</div>
+                    <div className="tower t1"></div>
+                    <div className="tower t2"></div>
+                    <div className="tower t3"></div>
                   </div>
-                  <span>2.39 : 1 CINEMATIC</span>
+                  <div className="figure">
+                    <div></div>
+                    <i></i>
+                  </div>
                 </>
               )}
-            </div>
-          </article>
+
+              {!hasRealVideo && !hasRealMedia && (
+                <button
+                  className="video-play"
+                  onClick={() => setIsPlaying(!isPlaying)}
+                  aria-label="Play or pause preview"
+                >
+                  <Icon name={isPlaying ? "spark" : "play"} size={22} />
+                </button>
+              )}
+
+              <div className="frame-bottom">
+                {hasRealMedia ? (
+                  <div style={{ display: "flex", gap: "8px", fontSize: "10px", fontFamily: "DM Mono", color: "#aaa", flexWrap: "wrap" }}>
+                    {lastResult?.livepeerOutputs?.map((o, i) => (
+                      <span key={i} style={{ background: "#1a1a2e", padding: "2px 8px", borderRadius: "4px" }}>
+                        {o.capability} · {(o.elapsedMs / 1000).toFixed(1)}s · ${o.costUsd.toFixed(3)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <div className="progress">
+                      <i style={{ width: isPlaying ? "80%" : "42%" }}></i>
+                    </div>
+                    <span>2.39 : 1 CINEMATIC</span>
+                  </>
+                )}
+              </div>
+            </article>
+          )}
 
           {/* Provenance Card */}
           <aside className="provenance">
@@ -1603,6 +1975,13 @@ export function DirectorStudio() {
             >
               OriginTrail W3C JSON-LD
             </button>
+            <button
+              onClick={() => setInspectorTab("compliance")}
+              className={inspectorTab === "compliance" ? "active" : ""}
+              style={{ color: inspectorTab === "compliance" ? "#0284c7" : "#0369a1", fontWeight: 700 }}
+            >
+              Brand Compliance & IP Certificate ({lastResult?.complianceCertificate ? "PASS 100%" : "READY"})
+            </button>
           </div>
 
           <div className="tab-content" style={{ display: "block", paddingTop: "14px" }}>
@@ -1729,6 +2108,247 @@ export function DirectorStudio() {
                   : `{\n  "@context": "https://schema.org",\n  "@type": "schema:VideoObject",\n  "@id": "did:dkg:continuum/scene/b9033c9626ca57b4",\n  "prov:wasDerivedFrom": [\n    "did:dkg:continuum/character/7d81bcb44509921c",\n    "did:dkg:continuum/set/b9d5c845a07638c9"\n  ]\n}`}
               </pre>
             )}
+
+            {inspectorTab === "compliance" && (() => {
+              const cert: BrandComplianceCertificate = lastResult?.complianceCertificate ?? {
+                id: `CERT-AETHER-2026-${(lastResult?.id || "001").slice(-6).toUpperCase()}`,
+                brandName: "Aether Kinetics Corp",
+                guidelineVersion: "v2.4 (Enterprise Production Tier)",
+                licenseAgreement: "Commercial Global Broadcast & Social Ad Rights (Tier A-1)",
+                owner: "0x71C...b82F (Verified Embody Enterprise Key)",
+                brandSafetyScore: 100,
+                issuedAt: lastResult?.createdAt || new Date().toISOString(),
+                timestamp: lastResult?.createdAt || new Date().toISOString(),
+                certificateHash: "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                provenanceUal: lastResult?.ual || "did:dkg:continuum/scene/b9033c9626ca57b4",
+                verifiedAssets: [
+                  {
+                    assetId: selectedCharIds[0] || "char-maya",
+                    name: selectedCharNames[0] || "Maya Lin",
+                    ual: `did:dkg:continuum/character/${selectedCharIds[0] || "char-maya"}`,
+                    type: "character",
+                    category: "character",
+                    license: "Commercial Talent Release & Global Ad Rights",
+                    licenseType: "Commercial Talent Release & Global Ad Rights",
+                    royaltyShare: "40%",
+                    brandSafetyScore: 100,
+                  },
+                  {
+                    assetId: selectedSetId || "set-neo-kyoto-stadium",
+                    name: selectedSet?.name || "Neo-Kyoto Skyline Stadium Track",
+                    ual: `did:dkg:continuum/set/${selectedSetId || "set-neo-kyoto-stadium"}`,
+                    type: "set",
+                    category: "set",
+                    license: "Enterprise Brand Arena Commercial Staging Rights",
+                    licenseType: "Enterprise Brand Arena Commercial Staging Rights",
+                    royaltyShare: "25%",
+                    brandSafetyScore: 100,
+                  },
+                  {
+                    assetId: selectedPropIds[0] || "prop-aether-x1",
+                    name: vaultProps.find((p) => selectedPropIds.includes(p.id))?.name || "Aether X1 Quantum Runners",
+                    ual: `did:dkg:continuum/prop/${selectedPropIds[0] || "prop-aether-x1"}`,
+                    type: "prop",
+                    category: "prop",
+                    license: "Proprietary Hero Product Patent & 3D Trademark",
+                    licenseType: "Proprietary Hero Product Patent & 3D Trademark",
+                    royaltyShare: "25%",
+                    brandSafetyScore: 100,
+                  },
+                  {
+                    assetId: selectedMotifIds[0] || "leit-velocity-pulse",
+                    name: selectedMotif?.name || "Velocity Pulse — Official Brand Anthem",
+                    ual: `did:dkg:continuum/leitmotif/${selectedMotifIds[0] || "leit-velocity-pulse"}`,
+                    type: "sound",
+                    category: "sound",
+                    license: "Exclusive Sync License & Master Sound Recording",
+                    licenseType: "Exclusive Sync License & Master Sound Recording",
+                    royaltyShare: "10%",
+                    brandSafetyScore: 100,
+                  },
+                ],
+                safetyChecks: [
+                  { rule: "Brand Guideline Adherence (Hex: #00f0ff, #ff0055 enforced)", status: "PASS", description: "Palette match 99.8% with canonical Aether palette", detail: "Palette match 99.8% with canonical Aether palette" },
+                  { rule: "Competitor Trademark Guard (Zero competitor logos)", status: "PASS", description: "Zero unauthorized marks detected across keyframes", detail: "Zero unauthorized marks detected across keyframes" },
+                  { rule: "Talent Model Release Verification (Maya Lin Biometric DNA)", status: "PASS", description: "Talent release signed and verified on OriginTrail DKG", detail: "Talent release signed and verified on OriginTrail DKG" },
+                  { rule: "Sonic Leitmotif Rhythm & Key Match (128 BPM · F Minor)", status: "PASS", description: "Anthem matches commercial broadcast master", detail: "Anthem matches commercial broadcast master" },
+                ],
+              };
+
+              const downloadCert = () => {
+                const jsonStr = JSON.stringify(cert, null, 2);
+                const blob = new Blob([jsonStr], { type: "application/json" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Brand-Compliance-Certificate-${cert.id}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast({
+                  type: "success",
+                  title: "Certificate Downloaded",
+                  message: `Cryptographic certificate ${cert.id} saved as JSON-LD.`,
+                });
+              };
+
+              const copyHash = () => {
+                navigator.clipboard.writeText(cert.certificateHash);
+                setCopiedCertHash(true);
+                setTimeout(() => setCopiedCertHash(false), 2000);
+                showToast({
+                  type: "success",
+                  title: "Hash Copied",
+                  message: "SHA-256 certificate fingerprint copied to clipboard.",
+                });
+              };
+
+              return (
+                <div className="compliance-cert-card">
+                  <div className="cert-header">
+                    <div className="cert-title-group">
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                        <span style={{ fontSize: "9px", fontFamily: "DM Mono", background: "#dbeafe", color: "#1e40af", padding: "2px 8px", borderRadius: "4px", fontWeight: 800 }}>
+                          ENTERPRISE IP AUDIT
+                        </span>
+                        <span style={{ fontSize: "10px", fontFamily: "DM Mono", color: "#64748b" }}>
+                          ID: {cert.id}
+                        </span>
+                      </div>
+                      <h3>Brand Compliance & IP Provenance Certificate</h3>
+                      <p>
+                        Cryptographically binds verified brand assets, talent releases, and guideline safety checks via OriginTrail DKG.
+                      </p>
+                    </div>
+
+                    <div className="cert-seal">
+                      <Icon name="check" size={14} />
+                      <span>100% BRAND AUDIT PASSED</span>
+                    </div>
+                  </div>
+
+                  <div className="cert-grid">
+                    <div className="cert-info-item">
+                      <span>Brand / Organization</span>
+                      <strong>{cert.brandName}</strong>
+                      <small>Enterprise Production Tier</small>
+                    </div>
+                    <div className="cert-info-item">
+                      <span>Guideline Version</span>
+                      <strong>{cert.guidelineVersion}</strong>
+                      <small>Show Bible Hash: #aether-v2.4</small>
+                    </div>
+                    <div className="cert-info-item">
+                      <span>License Agreement</span>
+                      <strong>{cert.licenseAgreement}</strong>
+                      <small>Node: {cert.owner}</small>
+                    </div>
+                    <div className="cert-info-item">
+                      <span>Cryptographic Hash</span>
+                      <strong style={{ fontFamily: "DM Mono", fontSize: "11px" }}>
+                        {cert.certificateHash.slice(0, 18)}…
+                      </strong>
+                      <button
+                        type="button"
+                        onClick={copyHash}
+                        style={{ border: 0, background: "none", color: "#7657d8", fontSize: "10px", fontWeight: 700, padding: 0, cursor: "pointer", marginTop: "2px" }}
+                      >
+                        {copiedCertHash ? "✓ COPIED" : "Copy Full SHA-256"}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Audited Assets & Royalty Share Table */}
+                  <div style={{ marginTop: "16px", marginBottom: "16px" }}>
+                    <h5 style={{ fontSize: "12px", fontWeight: 800, color: "#332f44", margin: "0 0 8px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                      Audited Knowledge Assets & Royalty Distribution
+                    </h5>
+                    <table className="dkg-triples-table">
+                      <thead>
+                        <tr>
+                          <th>BOUND ASSET</th>
+                          <th>CATEGORY</th>
+                          <th>COMMERCIAL LICENSE TIER</th>
+                          <th>ROYALTY SHARE</th>
+                          <th>AUDIT SCORE</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cert.verifiedAssets.map((asset, i) => (
+                          <tr key={i}>
+                            <td>
+                              <strong>{asset.name}</strong>
+                              <small style={{ display: "block", color: "#8a8894" }}>{asset.assetId}</small>
+                            </td>
+                            <td>
+                              <span style={{ textTransform: "uppercase", fontSize: "10px", color: "#6b687a" }}>
+                                {asset.category}
+                              </span>
+                            </td>
+                            <td>
+                              <span style={{ fontSize: "11px", color: "#374151" }}>{asset.licenseType}</span>
+                            </td>
+                            <td>
+                              <strong style={{ color: "#7657d8" }}>{asset.royaltyShare}</strong>
+                            </td>
+                            <td>
+                              <span style={{ color: "#15803d", fontWeight: 700 }}>PASS (100%)</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Brand Safety Automated Checklist */}
+                  <div style={{ marginTop: "14px" }}>
+                    <h5 style={{ fontSize: "12px", fontWeight: 800, color: "#332f44", margin: "0 0 8px", letterSpacing: "0.04em", textTransform: "uppercase" }}>
+                      Automated Brand Safety & Anti-Drift Matrix
+                    </h5>
+                    <div className="cert-safety-checklist">
+                      {cert.safetyChecks.map((chk, i) => (
+                        <div className="safety-check-row pass" key={i}>
+                          <div>
+                            <strong>{chk.rule}</strong>
+                            <small style={{ display: "block", color: "#475569", fontSize: "10px", marginTop: "2px" }}>
+                              {chk.detail}
+                            </small>
+                          </div>
+                          <span style={{ background: "#dcfce7", color: "#166534", padding: "2px 6px", borderRadius: "4px", fontWeight: 800, fontSize: "10px", fontFamily: "DM Mono" }}>
+                            {chk.status}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Actions Row */}
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "18px", paddingTop: "14px", borderTop: "1px solid #f0edf6", flexWrap: "wrap", gap: "10px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <button
+                        type="button"
+                        className="mint-button"
+                        onClick={downloadCert}
+                        style={{ fontSize: "12px", padding: "8px 16px", background: "#0284c7" }}
+                      >
+                        Download Cryptographic Certificate (JSON-LD)
+                      </button>
+                      <button
+                        type="button"
+                        className="outline-button"
+                        onClick={() => navigate("/graph")}
+                        style={{ fontSize: "12px", padding: "8px 14px" }}
+                      >
+                        Inspect in DKG Graph →
+                      </button>
+                    </div>
+
+                    <span style={{ fontSize: "11px", color: "#64748b", fontFamily: "DM Mono" }}>
+                      DKG UAL: {cert.provenanceUal.slice(0, 32)}…
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
       </section>

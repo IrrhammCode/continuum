@@ -171,6 +171,7 @@ function sceneToJsonLd(scene: SceneResult) {
       "ex:costUsd": o.costUsd,
     })),
     "ex:promptFingerprint": scene.lineage.provenance.promptFingerprint,
+    "ex:complianceCertificate": scene.complianceCertificate ?? null,
     "prov:generatedAtTime": scene.createdAt,
   };
 }

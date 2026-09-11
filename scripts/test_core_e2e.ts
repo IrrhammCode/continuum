@@ -368,22 +368,39 @@ async function main() {
   info(`Canonical Attire: "${rawChar["ex:canonicalAttire"]}"`);
 
   // ──────────────────────────────────────────────────────────
+  // 11. Enterprise Brand Compliance & Cryptographic Certificate Audit
+  // ──────────────────────────────────────────────────────────
+  header("11. Brand Compliance & Cryptographic Certificate Audit");
+  const certRes = await request(`/api/scenes/${sceneResult.id}/certificate`);
+  if (!certRes || !certRes.certificateHash) {
+    throw new Error("Scene missing cryptographic brand compliance certificate!");
+  }
+  pass(`Cryptographic Certificate Verified: ${certRes.id ?? 'CERT-AETHER'}`);
+  info(`  • Brand Name:       ${certRes.brandName}`);
+  info(`  • Guideline Tier:   ${certRes.guidelineVersion}`);
+  info(`  • License Holder:   ${certRes.owner}`);
+  info(`  • Certificate Hash: ${certRes.certificateHash}`);
+  info(`  • Verified Assets:  ${certRes.verifiedAssets.length} canonical assets bound`);
+  info(`  • Safety Rules:     ${certRes.safetyChecks.filter((c: any) => c.status === "passed" || c.status === "PASS").length}/${certRes.safetyChecks.length} passed`);
+
+  // ──────────────────────────────────────────────────────────
   // Summary
   // ──────────────────────────────────────────────────────────
   const elapsedSeconds = ((Date.now() - startTime) / 1000).toFixed(2);
   console.log(`\n${colors.bold}${colors.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
-  console.log(`✦ ALL 10 CORE CONTINUUM LIFECYCLE TESTS PASSED! (${elapsedSeconds}s)`);
+  console.log(`✦ ALL 11 CONTINUUM LIFECYCLE & BRAND AUDIT TESTS PASSED! (${elapsedSeconds}s)`);
   console.log(`━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${colors.reset}`);
   console.log(`
 Summary of Created Canon Assets:
-  • Project:   ${project.title} (${project.ual})
-  • Character: ${character.name} (${character.ual})
-  • Set:       ${setAsset.name} (${setAsset.ual})
-  • Sound:     ${sound.name} (${sound.ual})
-  • Prop:      ${prop.name} (${prop.ual})
-  • Scene:     ${sceneResult.id} (${sceneResult.ual})
+  • Project:     ${project.title} (${project.ual})
+  • Character:   ${character.name} (${character.ual})
+  • Set:         ${setAsset.name} (${setAsset.ual})
+  • Sound:       ${sound.name} (${sound.ual})
+  • Prop:        ${prop.name} (${prop.ual})
+  • Scene:       ${sceneResult.id} (${sceneResult.ual})
+  • Certificate: ${certRes.certificateHash.slice(0, 24)}… (${certRes.provenanceUal})
 
-Everything is functioning end-to-end with zero errors!
+Continuum Enterprise Brand Engine is functioning end-to-end with zero errors!
 `);
 }
 

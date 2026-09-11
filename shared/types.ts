@@ -1,5 +1,43 @@
 /* ─── Continuum — Core Type Definitions ─── */
 
+export interface BrandComplianceInfo {
+  owner: string;                // e.g. "Aether Global Corp"
+  licenseType: string;          // e.g. "Commercial Enterprise", "Commercial Talent Release & Global Ad Rights"
+  version: string;              // e.g. "v2.4"
+  brandSafetyScore: number;     // 0-100
+  authorizedParties?: string[];
+}
+
+export interface BrandComplianceCertificate {
+  id?: string;
+  brandName: string;
+  guidelineVersion: string;
+  licenseAgreement: string;
+  owner: string;
+  brandSafetyScore?: number;
+  verifiedAssets: {
+    name: string;
+    ual: string;
+    type: string;
+    license: string;
+    royaltyShare?: string;
+    assetId?: string;
+    category?: string;
+    licenseType?: string;
+    brandSafetyScore?: number;
+  }[];
+  safetyChecks: {
+    rule: string;
+    status: "passed" | "warning" | "PASS" | "WARN";
+    description?: string;
+    detail?: string;
+  }[];
+  certificateHash: string;
+  timestamp: string;
+  issuedAt?: string;
+  provenanceUal: string;
+}
+
 // ── Vault Asset Types ──
 
 export interface CharacterAsset {
@@ -23,6 +61,8 @@ export interface CharacterAsset {
   createdAt: string;            // ISO timestamp
   ual?: string;                 // DKG Universal Asset Locator
   avatarUrl?: string;           // generated Livepeer portrait URL
+  brandCompliance?: BrandComplianceInfo;
+  compliance?: BrandComplianceInfo;
 }
 
 export interface AttireConstraint {
@@ -43,6 +83,8 @@ export interface LeitmotifAsset {
   audioUrl?: string;            // generated Livepeer audio URL
   createdAt: string;
   ual?: string;
+  brandCompliance?: BrandComplianceInfo;
+  compliance?: BrandComplianceInfo;
 }
 
 export interface SetAsset {
@@ -57,6 +99,8 @@ export interface SetAsset {
   createdAt: string;
   ual?: string;
   imageUrl?: string;            // generated Livepeer concept art URL
+  brandCompliance?: BrandComplianceInfo;
+  compliance?: BrandComplianceInfo;
 }
 
 export interface PropAsset {
@@ -74,6 +118,8 @@ export interface PropAsset {
   createdAt: string;
   ual?: string;                 // did:dkg:continuum/prop/...
   imageUrl?: string;            // generated Livepeer concept art / render URL
+  brandCompliance?: BrandComplianceInfo;
+  compliance?: BrandComplianceInfo;
 }
 
 // ── Project & Series Types ──
@@ -87,6 +133,9 @@ export interface Project {
   totalEpisodes: number;
   createdAt: string;
   ual?: string;
+  isCommercialBrand?: boolean;
+  brandCompliance?: BrandComplianceInfo;
+  compliance?: BrandComplianceInfo;
 }
 
 // ── Scene & Episode Types ──
@@ -103,6 +152,10 @@ export interface SceneRequest {
   sceneNumber: number;
   prompt: string;               // user's natural language direction
   cast: SceneCast;
+  campaignMode?: "cinematic" | "commercial";
+  aspectRatio?: "16:9" | "9:16";
+  campaignObjective?: string;
+  callToAction?: string;
 }
 
 export interface SceneResult {
@@ -115,6 +168,7 @@ export interface SceneResult {
   lineage: SceneLineage;
   createdAt: string;
   ual?: string;
+  complianceCertificate?: BrandComplianceCertificate;
 }
 
 export interface DkgConstraintLog {

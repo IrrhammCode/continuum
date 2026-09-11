@@ -138,6 +138,57 @@ export const CHARACTERS: CharacterAsset[] = [
     avatarUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjIvbW9yZlZDa2w1ZXp2UWMwRjRFU3o3LmpwZw.b0f48dc187ef08c8/morfVCkl5ezvQc0F4ESz7.jpg",
     createdAt: "2026-09-10T04:00:00Z",
   },
+  {
+    id: "char-maya",
+    projectId: "proj-aether-kinetics",
+    name: "Maya Lin",
+    epithet: "Olympic Cyber-Sprinter & Global Brand Ambassador",
+    visualDna: {
+      faceSeed: "maya-lin-aether-seed-5e8b",
+      hairColor: "#0f172a",
+      eyeColor: "#06b6d4",
+      skinTone: "#e2b896",
+      distinguishingFeatures: [
+        "luminescent cyan aerodynamic ear telemetry fin",
+        "high-gloss aerodynamic cybernetic prosthetic legs with gold Aether branding",
+        "sharp athletic gaze with holographic iris ring",
+      ],
+      attire: {
+        canonical:
+          "matte-black aerodynamic compression bodysuit with pulsing cyan circuit accents and gold Aether Kinetics typography",
+        colorPalette: ["#020617", "#06b6d4", "#e2e8f0", "#eab308"],
+        forbidden: [
+          "baggy clothing",
+          "casual jeans",
+          "competitor logos",
+          "dull brown fabrics",
+          "weapons",
+        ],
+      },
+      negativePrompts: [
+        "casual clothes",
+        "heavy armor",
+        "weapons",
+        "sloppy posture",
+        "Nike logo",
+        "Adidas logo",
+        "blurry face",
+      ],
+    },
+    voiceProfile: {
+      timbreDescription:
+        "confident, energetic, articulate — speaks with athletic precision and focus",
+      ttsModel: "alloy",
+    },
+    avatarUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQxMmIvRjZjTG5KZE43SkZLaFNTLXFCMkgxLmpwZw.47fdb1a8514009fd/F6cLnJdN7JFKhSS-qB2H1.jpg",
+    createdAt: "2026-09-11T04:00:00Z",
+    brandCompliance: {
+      owner: "Aether Global Corporation",
+      licenseType: "Commercial Enterprise",
+      version: "v2.4",
+      brandSafetyScore: 100,
+    },
+  },
 ];
 
 // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -197,6 +248,29 @@ export const LEITMOTIFS: LeitmotifAsset[] = [
     ],
     audioUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZjcveW9vSWhXdjg4TjRtemNBNXkwdFBIX291dHB1dC5tcDM.9fa53b76e0fcc4c3/yooIhWv88N4mzcA5y0tPH_output.mp3",
     createdAt: "2026-09-10T04:00:00Z",
+  },
+  {
+    id: "leit-velocity-pulse",
+    projectId: "proj-aether-kinetics",
+    name: "Velocity Pulse — Official Brand Commercial Anthem",
+    boundToCharacterId: "char-maya",
+    mood: "high-energy, inspiring, rhythmic, modern electronic",
+    bpm: 128,
+    key: "E minor",
+    instruments: [
+      "punchy synth bassline",
+      "crisp electronic hi-hats",
+      "uplifting supersaw lead",
+      "pulsing sub-kick",
+    ],
+    audioUrl: "https://agent.livepeer.org/a/aHR0cHM6Ly92M2IuZmFsLm1lZGlhL2ZpbGVzL2IvMGFhOWQ3ZGIvTGd0LUwtZEEyT0UwZXM1eE83anNFX291dHB1dC5tcDM.440ba9383ebbbd15/Lgt-L-dA2OE0es5xO7jsE_output.mp3",
+    createdAt: "2026-09-11T04:00:00Z",
+    brandCompliance: {
+      owner: "Aether Global Soundworks",
+      licenseType: "Commercial Enterprise",
+      version: "v2.4",
+      brandSafetyScore: 100,
+    },
   },
 ];
 
@@ -266,5 +340,31 @@ export const SETS: SetAsset[] = [
     ],
     imageUrl: "/assets/vault/derelict-alpha.jpg",
     createdAt: "2026-09-10T04:00:00Z",
+  },
+  {
+    id: "set-neo-kyoto-stadium",
+    projectId: "proj-aether-kinetics",
+    name: "Neo-Kyoto Skyline Stadium Track",
+    description:
+      "An ultra-modern rooftop Olympic sprint track suspended between crystal skyscrapers. Holographic Aether Kinetics brand pillars cast vibrant cyan and amber rim light onto a reflective rain-slicked running surface.",
+    colorPalette: ["#030712", "#06b6d4", "#3b82f6", "#f59e0b", "#f8fafc"],
+    lightingSchema:
+      "high-contrast cinematic sports broadcast lighting, dual-tone cyan rim glow, holographic track markers",
+    timeOfDay: "dusk / stadium floodlights",
+    negativePrompts: [
+      "dirt track",
+      "rural background",
+      "daylight sunshine",
+      "medieval structures",
+      "garbage",
+    ],
+    imageUrl: "/assets/vault/sky-garden.jpg",
+    createdAt: "2026-09-11T04:00:00Z",
+    brandCompliance: {
+      owner: "Neo-Kyoto Athletic Commission & Aether Global",
+      licenseType: "Commercial Enterprise",
+      version: "v2.4",
+      brandSafetyScore: 100,
+    },
   },
 ];

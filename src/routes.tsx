@@ -528,6 +528,12 @@ export function Characters() {
                   <p>{c.epithet}</p>
                 </div>
               </div>
+              {c.compliance && (
+                <div style={{ margin: "6px 0", padding: "4px 8px", background: "#eff6ff", border: "1px solid #bfdbfe", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "10px", color: "#1e40af" }}>
+                  <span style={{ fontWeight: 800 }}>ENTERPRISE LICENSED IP</span>
+                  <span style={{ fontFamily: "DM Mono" }}>{c.compliance.licenseType.slice(0, 20)}…</span>
+                </div>
+              )}
               <div className="swatches">
                 {c.visualDna?.attire?.colorPalette?.map((hex) => (
                   <span key={hex} style={{ background: hex }} title={hex} />
@@ -1049,6 +1055,12 @@ export function Sets() {
                   <p>DKG CANONICAL ENVIRONMENT ASSET</p>
                 </div>
               </div>
+              {set.compliance && (
+                <div style={{ margin: "6px 0", padding: "4px 8px", background: "#f0fdfa", border: "1px solid #99f6e4", borderRadius: "6px", display: "flex", alignItems: "center", justifyContent: "space-between", fontSize: "10px", color: "#0f766e" }}>
+                  <span style={{ fontWeight: 800 }}>ENTERPRISE VENUE</span>
+                  <span style={{ fontFamily: "DM Mono" }}>{set.compliance.licenseType.slice(0, 24)}…</span>
+                </div>
+              )}
               <p className="set-description">{set.description}</p>
               <div className="palette-bar">
                 {set.colorPalette.map((c) => (
@@ -1673,6 +1685,13 @@ export function Sound() {
                   <p>
                     <b>{bound ? bound.name : "Atmospheric"}</b> · {track.bpm} BPM · Key of {track.key} · Mood: {track.mood}
                   </p>
+                  {track.compliance && (
+                    <div style={{ marginTop: "4px" }}>
+                      <span className="enterprise-ip-pill" style={{ background: "#eff6ff", color: "#1d4ed8", borderColor: "#bfdbfe" }}>
+                        OFFICIAL BRAND ANTHEM · {track.compliance.licenseType.slice(0, 24)}…
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -4514,6 +4533,13 @@ export function Props() {
                 </small>
 
                 <h2 style={{ margin: "6px 0 8px" }}>{prop.name}</h2>
+                {prop.compliance && (
+                  <div style={{ marginBottom: "8px" }}>
+                    <span className="enterprise-ip-pill" style={{ background: "#fffbeb", color: "#92400e", borderColor: "#fde68a" }}>
+                      HERO PRODUCT IP · {prop.compliance.licenseType.slice(0, 24)}…
+                    </span>
+                  </div>
+                )}
 
                 {/* Prompt & Visual constraints */}
                 <p style={{ margin: "0 0 8px", fontSize: "11px", color: "#4f4e5a", lineHeight: 1.5 }}>

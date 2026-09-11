@@ -688,14 +688,14 @@ export function DirectorStudio() {
     <section className="workspace">
       {/* ── Continuum Enterprise: Track 2 Commercial & Brand Engine Mode Banner ── */}
       <div className="enterprise-mode-banner">
-        <div style={{ display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap" }}>
+        <div className="mode-banner-left">
           <div className="mode-switcher-tabs">
             <button
               type="button"
               className={`mode-tab-btn ${campaignMode === "cinematic" ? "active" : ""}`}
               onClick={() => handleSwitchCampaignMode("cinematic")}
             >
-              <Icon name="spark" size={14} />
+              <Icon name="spark" size={13} />
               <span>Cinematic Narrative Engine</span>
             </button>
             <button
@@ -703,24 +703,29 @@ export function DirectorStudio() {
               className={`mode-tab-btn ${campaignMode === "commercial" ? "active commercial" : ""}`}
               onClick={() => handleSwitchCampaignMode("commercial")}
             >
-              <Icon name="layers" size={14} />
+              <Icon name="layers" size={13} />
               <span>Commercial Ad Campaign & Socials (Enterprise Track)</span>
             </button>
           </div>
-          <span style={{ fontSize: "11px", color: "#a5a2b8", fontFamily: "DM Mono" }}>
+        </div>
+
+        <div className="mode-banner-center">
+          <span className="mode-track-indicator">
             Track 2: Livepeer Agent + OriginTrail DKG
           </span>
         </div>
 
-        <div style={{ display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap" }}>
+        <div className="mode-banner-right">
           {campaignMode === "commercial" ? (
-            <span style={{ fontSize: "10px", fontFamily: "DM Mono", background: "rgba(0, 240, 255, 0.15)", color: "#38bdf8", border: "1px solid rgba(0, 240, 255, 0.4)", borderRadius: "6px", padding: "4px 10px", fontWeight: 700 }}>
-              ENTERPRISE AUDIT · PROV-O VERIFIED
-            </span>
+            <>
+              <span className="mode-status-tag enterprise">ENTERPRISE IP AUDIT</span>
+              <span className="mode-status-tag verified">PROV-O VERIFIED</span>
+            </>
           ) : (
-            <span style={{ fontSize: "10px", fontFamily: "DM Mono", background: "rgba(118, 87, 216, 0.2)", color: "#c4b5fd", border: "1px solid rgba(118, 87, 216, 0.4)", borderRadius: "6px", padding: "4px 10px", fontWeight: 700 }}>
-              CANON LOCKED · ZERO DRIFT
-            </span>
+            <>
+              <span className="mode-status-tag canon">CANON LOCKED</span>
+              <span className="mode-status-tag verified">ZERO DRIFT</span>
+            </>
           )}
         </div>
       </div>
